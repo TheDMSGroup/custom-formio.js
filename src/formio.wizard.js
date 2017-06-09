@@ -128,7 +128,7 @@ export class FormioWizard extends FormioForm {
   // DMS
 
   nextPageWithValidation(thisInstance, valid, message) {
-    console.log('nextPageWithValidation');
+    //console.log('nextPageWithValidation');
 
     let proceedToNextPage = false;
 
@@ -154,8 +154,8 @@ export class FormioWizard extends FormioForm {
         });
       });
     } else {
-      console.log('valid' + ' = ' + valid);
-      console.log('message' + ' = ' + message);
+      //console.log('valid' + ' = ' + valid);
+      //console.log('message' + ' = ' + message);
 
       return Promise.reject(
         thisInstance.showErrors(message)

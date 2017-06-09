@@ -975,7 +975,7 @@ export class BaseComponent {
    * @param data - The global data object.
    */
   calculateValue(data) {
-    console.log('calculateValue');
+    //console.log('calculateValue');
 
     if (!this.component.calculateValue) {
       return;
@@ -991,7 +991,7 @@ export class BaseComponent {
         //let val = eval('var value = [];' + this.component.calculateValue.toString() + '; return value;');
         let val = eval('var value = [];' + this.component.calculateValue.toString() + ';');
 
-        console.log('val' + ' = ' + val);
+        //console.log('val' + ' = ' + val);
 
         this.setValue(val);
       }

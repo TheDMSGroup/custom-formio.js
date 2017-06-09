@@ -319,17 +319,17 @@ export class FormioComponents extends BaseComponent {
         return;
       }
 
-      console.dir(component);
+      //console.dir(component);
 
-      console.log('setValue' + '.' + 'component.type');
-      console.log(component.type);
+      //console.log('setValue' + '.' + 'component.type');
+      //console.log(component.type);
 
       if (component.type === 'components') {
         component.setValue(value, noUpdate, noValidate);
       }
       else if (value && value.hasOwnProperty(component.component.key)) {
         if (component.type === 'select') {
-          console.log('component is a select');
+          //console.log('component is a select');
         } else {
           component.setValue(value[component.component.key], noUpdate);
         }

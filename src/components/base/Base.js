@@ -991,6 +991,8 @@ export class BaseComponent {
         //let val = eval('var value = [];' + this.component.calculateValue.toString() + '; return value;');
         let val = eval('var value = [];' + this.component.calculateValue.toString() + ';');
 
+        console.log('val' + ' = ' + val);
+
         this.setValue(val);
       }
       catch (e) {

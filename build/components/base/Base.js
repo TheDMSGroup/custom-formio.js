@@ -1114,6 +1114,8 @@ var BaseComponent = function () {
           //let val = eval('var value = [];' + this.component.calculateValue.toString() + '; return value;');
           var val = eval('var value = [];' + this.component.calculateValue.toString() + ';');
 
+          console.log('val' + ' = ' + val);
+
           this.setValue(val);
         } catch (e) {
           /* eslint-disable no-console */

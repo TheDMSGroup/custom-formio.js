@@ -8,7 +8,8 @@ module.exports = function(gulp, plugins) {
       .pipe(plugins.source('formio.wizard.js'))
       .pipe(gulp.dest('dist/'))
       .pipe(plugins.rename('formio.wizard.min.js'))
-      .pipe(plugins.streamify(plugins.uglify()))
+      // DMS - In order to do a better debug, temporarily comment or remove the following line:
+      //.pipe(plugins.streamify(plugins.uglify()))
       .pipe(gulp.dest('dist/'));
   };
 };

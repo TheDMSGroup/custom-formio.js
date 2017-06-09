@@ -1098,7 +1098,7 @@ var BaseComponent = function () {
   }, {
     key: 'calculateValue',
     value: function calculateValue(data) {
-      console.log('calculateValue');
+      //console.log('calculateValue');
 
       if (!this.component.calculateValue) {
         return;
@@ -1114,7 +1114,7 @@ var BaseComponent = function () {
           //let val = eval('var value = [];' + this.component.calculateValue.toString() + '; return value;');
           var val = eval('var value = [];' + this.component.calculateValue.toString() + ';');
 
-          console.log('val' + ' = ' + val);
+          //console.log('val' + ' = ' + val);
 
           this.setValue(val);
         } catch (e) {

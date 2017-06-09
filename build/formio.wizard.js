@@ -180,7 +180,7 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
   }, {
     key: 'nextPageWithValidation',
     value: function nextPageWithValidation(thisInstance, valid, message) {
-      console.log('nextPageWithValidation');
+      //console.log('nextPageWithValidation');
 
       var proceedToNextPage = false;
 
@@ -206,8 +206,8 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
           });
         });
       } else {
-        console.log('valid' + ' = ' + valid);
-        console.log('message' + ' = ' + message);
+        //console.log('valid' + ' = ' + valid);
+        //console.log('message' + ' = ' + message);
 
         return _nativePromiseOnly2.default.reject(thisInstance.showErrors(message));
       }

@@ -456,16 +456,16 @@ var FormioComponents = exports.FormioComponents = function (_BaseComponent) {
           return;
         }
 
-        console.dir(component);
+        //console.dir(component);
 
-        console.log('setValue' + '.' + 'component.type');
-        console.log(component.type);
+        //console.log('setValue' + '.' + 'component.type');
+        //console.log(component.type);
 
         if (component.type === 'components') {
           component.setValue(value, noUpdate, noValidate);
         } else if (value && value.hasOwnProperty(component.component.key)) {
           if (component.type === 'select') {
-            console.log('component is a select');
+            //console.log('component is a select');
           } else {
             component.setValue(value[component.component.key], noUpdate);
           }
@@ -2463,7 +2463,7 @@ var BaseComponent = function () {
   }, {
     key: 'calculateValue',
     value: function calculateValue(data) {
-      console.log('calculateValue');
+      //console.log('calculateValue');
 
       if (!this.component.calculateValue) {
         return;
@@ -2479,7 +2479,7 @@ var BaseComponent = function () {
           //let val = eval('var value = [];' + this.component.calculateValue.toString() + '; return value;');
           var val = eval('var value = [];' + this.component.calculateValue.toString() + ';');
 
-          console.log('val' + ' = ' + val);
+          //console.log('val' + ' = ' + val);
 
           this.setValue(val);
         } catch (e) {

@@ -127,20 +127,57 @@ export class FormioWizard extends FormioForm {
 
   // DMS
 
-  nextPageWithValidation(thisInstance, valid, message) {
+  nextPageWithValidation(thisInstance, additionalFieldsValidationData) {
     //console.log('nextPageWithValidation');
+
+    //console.log('----- ----- ----- ----- -----');
+    //console.log(thisInstance);
+
+    //console.log('additionalFieldsValidationData:');
+    //console.dir(additionalFieldsValidationData);
+
+    //console.log('----- ----- ----- ----- -----');
 
     let proceedToNextPage = false;
 
     // If no data given, then proceed to the next page.
-    if (typeof valid === 'undefined' && typeof message === 'undefined') {
+    if (typeof additionalFieldsValidationData === 'undefined') {
       proceedToNextPage = true;
     }
 
-    // If data was given and the valid flag is true.
-    if (valid) {
-      proceedToNextPage = true;
+    if (additionalFieldsValidationData) {
+      let currentObj;
+
+      let valid;
+      let message;
+
+      let allValid = 1;
+
+      for (var currentKey in additionalFieldsValidationData) {
+        currentObj = additionalFieldsValidationData[currentKey];
+
+        valid = currentObj.valid;
+        message = currentObj.message;
+
+        if (!valid) {
+            thisInstance.getComponent(
+            currentKey,
+            function(component) {
+              component.createErrorElement();
+              component.addInputError(message);
+            }
+          );
+
+          allValid = 0;
+        }
+      }
+
+      if (allValid) {
+          proceedToNextPage = true;
+      }
     }
+
+    //console.log('proceedToNextPage' + ' = ' + proceedToNextPage);
 
     if (proceedToNextPage) {
       thisInstance.checkData(thisInstance.submission.data, true);
@@ -154,12 +191,7 @@ export class FormioWizard extends FormioForm {
         });
       });
     } else {
-      //console.log('valid' + ' = ' + valid);
-      //console.log('message' + ' = ' + message);
-
-      return Promise.reject(
-        thisInstance.showErrors(message)
-      );
+      return Promise.reject(thisInstance.showErrors());
     }
   }
 

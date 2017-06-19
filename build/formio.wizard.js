@@ -179,20 +179,58 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
 
   }, {
     key: 'nextPageWithValidation',
-    value: function nextPageWithValidation(thisInstance, valid, message) {
+    value: function nextPageWithValidation(thisInstance, additionalFieldsValidationData) {
       //console.log('nextPageWithValidation');
+
+      //console.log('----- ----- ----- ----- -----');
+      //console.log(thisInstance);
+
+      //console.log('additionalFieldsValidationData:');
+      //console.dir(additionalFieldsValidationData);
+
+      //console.log('----- ----- ----- ----- -----');
 
       var proceedToNextPage = false;
 
       // If no data given, then proceed to the next page.
-      if (typeof valid === 'undefined' && typeof message === 'undefined') {
+      if (typeof additionalFieldsValidationData === 'undefined') {
         proceedToNextPage = true;
       }
 
-      // If data was given and the valid flag is true.
-      if (valid) {
-        proceedToNextPage = true;
+      if (additionalFieldsValidationData) {
+        var currentKey;
+
+        (function () {
+          var currentObj = void 0;
+
+          var valid = void 0;
+          var message = void 0;
+
+          var allValid = 1;
+
+          for (currentKey in additionalFieldsValidationData) {
+            currentObj = additionalFieldsValidationData[currentKey];
+
+            valid = currentObj.valid;
+            message = currentObj.message;
+
+            if (!valid) {
+              thisInstance.getComponent(currentKey, function (component) {
+                component.createErrorElement();
+                component.addInputError(message);
+              });
+
+              allValid = 0;
+            }
+          }
+
+          if (allValid) {
+            proceedToNextPage = true;
+          }
+        })();
       }
+
+      //console.log('proceedToNextPage' + ' = ' + proceedToNextPage);
 
       if (proceedToNextPage) {
         thisInstance.checkData(thisInstance.submission.data, true);
@@ -206,10 +244,7 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
           });
         });
       } else {
-        //console.log('valid' + ' = ' + valid);
-        //console.log('message' + ' = ' + message);
-
-        return _nativePromiseOnly2.default.reject(thisInstance.showErrors(message));
+        return _nativePromiseOnly2.default.reject(thisInstance.showErrors());
       }
     }
   }, {

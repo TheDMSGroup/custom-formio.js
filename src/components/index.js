@@ -31,6 +31,7 @@ import { SelectBoxesComponent } from './selectboxes/SelectBoxes';
 import { SurveyComponent } from './survey/Survey';
 import { WellComponent } from './well/Well';
 import { GmapComponent } from './gmap/Gmap';
+import { JornayaComponent } from './jornaya/Jornaya';
 module.exports = {
   address: AddressComponent,
   base: BaseComponent,
@@ -65,6 +66,7 @@ module.exports = {
   survey: SurveyComponent,
   well: WellComponent,
   gmap: GmapComponent,
+  jornaya: JornayaComponent,
   create: function(component, options, data) {
     let comp = null;
     if (!component.type) {

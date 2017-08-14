@@ -21,11 +21,10 @@ export class JornayaComponent extends BaseComponent {
     this.createElement();
     this.input = this.createInput(this.element);
     this.createLabel(this.element, this.input);
-    if (!this.labelElement) {
+    if (!this.label) {
       this.addInput(this.input, this.element);
     }
-    this.createDescription(this.element);
-    if (this.options.readOnly || this.component.disabled) {
+    if (this.options.readOnly) {
       this.disabled = true;
     }
   }
@@ -35,7 +34,7 @@ export class JornayaComponent extends BaseComponent {
     if (this.component.label) {
       className += ' checkbox';
     }
-    this.element = this.ce('div', {
+    this.element = this.ce('element', 'div', {
       id: this.id,
       class: className
     });
@@ -45,29 +44,35 @@ export class JornayaComponent extends BaseComponent {
     if (!this.component.label) {
       return null;
     }
-    this.labelElement = this.ce('label', {
+    this.label = this.ce('label', 'label', {
       class: 'control-label'
     });
 
     // Create the SPAN around the textNode for better style hooks
-    this.labelSpan = this.ce('span');
+    this.labelSpan = this.ce('labelSpan', 'span');
 
     if (this.info.attr.id) {
-      this.labelElement.setAttribute('for', this.info.attr.id);
+      this.label.setAttribute('for', this.info.attr.id);
     }
-    this.addInput(input, this.labelElement);
+    this.addInput(input, this.label);
     if (!this.options.inputsOnly) {
-      this.labelSpan.appendChild(this.text(this.component.label));
-      this.labelElement.appendChild(this.labelSpan);
+      // DMS
+
+      //this.labelSpan.appendChild(this.text(this.component.label));
+      //this.label.appendChild(this.labelSpan);
+
+      var labelElement = document.createElement('div');
+      labelElement.innerHTML = this.component.label;
+      this.label.appendChild(labelElement);
     }
-    container.appendChild(this.labelElement);
+    container.appendChild(this.label);
   }
 
   createInput(container) {
     if (!this.component.input) {
       return;
     }
-    let input = this.ce(this.info.type, this.info.attr);
+    let input = this.ce('input', this.info.type, this.info.attr);
     this.errorContainer = container;
     return input;
   }
@@ -90,8 +95,7 @@ export class JornayaComponent extends BaseComponent {
     return !!this.inputs[index].checked;
   }
 
-  setValue(value, flags) {
-    flags = this.getFlags.apply(this, arguments);
+  setValue(value, noUpdate, noValidate) {
     this.value = value;
     if (!this.input) {
       return;
@@ -112,6 +116,8 @@ export class JornayaComponent extends BaseComponent {
       this.input.value = 0;
       this.input.checked = 0;
     }
-    this.updateValue(flags);
+    if (!noUpdate) {
+      this.updateValue(noValidate);
+    }
   }
 }

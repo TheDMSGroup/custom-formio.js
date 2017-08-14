@@ -66,6 +66,8 @@ var _Well = require('./well/Well');
 
 var _Gmap = require('./gmap/Gmap');
 
+var _Jornaya = require('./jornaya/Jornaya');
+
 module.exports = {
   address: _Address.AddressComponent,
   base: _Base.BaseComponent,
@@ -100,6 +102,7 @@ module.exports = {
   survey: _Survey.SurveyComponent,
   well: _Well.WellComponent,
   gmap: _Gmap.GmapComponent,
+  jornaya: _Jornaya.JornayaComponent,
   create: function create(component, options, data) {
     var comp = null;
     if (!component.type) {

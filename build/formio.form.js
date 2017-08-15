@@ -626,11 +626,15 @@ var FormioForm = exports.FormioForm = function (_FormioComponents) {
       var _this8 = this;
 
       // DMS
-
-      for (var i = 0; i < this.components.length; i++) {
-        if (this.components[i].type === 'checkbox' && this.components[i].component.validate.required && (this.components[i].value === null || !this.components[i].value)) {
-          delete this.submission.data[this.components[i].component.key];
+      var comp = null;
+      this.everyComponent(function (component) {
+        if ((component.component.type === 'checkbox' || component.component.type === 'jornaya') && component.component.validate.required && !component.getValue()) {
+          comp = component.component.key;
         }
+      });
+
+      if (comp) {
+        delete this.submission.data[comp];
       }
 
       var submission = this.submission;

@@ -744,7 +744,8 @@ var BaseComponent = function () {
         var mask = this.getInputMask(this.component.inputMask);
         this.inputMask = (0, _vanilla2.default)({
           inputElement: input,
-          mask: mask
+          mask: mask,
+          placeholderChar: '\u2000'
         });
         if (!this.component.placeholder) {
           input.setAttribute('placeholder', this.maskPlaceholder(mask));

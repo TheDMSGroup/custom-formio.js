@@ -664,7 +664,8 @@ export class BaseComponent {
       let mask = this.getInputMask(this.component.inputMask);
       this.inputMask = maskInput({
         inputElement: input,
-        mask: mask
+        mask: mask,
+        placeholderChar: '\u2000'
       });
       if (!this.component.placeholder) {
         input.setAttribute('placeholder', this.maskPlaceholder(mask));

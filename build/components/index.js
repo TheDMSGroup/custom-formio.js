@@ -68,6 +68,8 @@ var _Gmap = require('./gmap/Gmap');
 
 var _Jornaya = require('./jornaya/Jornaya');
 
+var _ButtonValue = require('./buttonvalue/ButtonValue');
+
 module.exports = {
   address: _Address.AddressComponent,
   base: _Base.BaseComponent,
@@ -103,6 +105,7 @@ module.exports = {
   well: _Well.WellComponent,
   gmap: _Gmap.GmapComponent,
   jornaya: _Jornaya.JornayaComponent,
+  buttonvalue: _ButtonValue.ButtonValueComponent,
   create: function create(component, options, data) {
     var comp = null;
     if (!component.type) {

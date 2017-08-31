@@ -70,6 +70,8 @@ var _Jornaya = require('./jornaya/Jornaya');
 
 var _ButtonValue = require('./buttonvalue/ButtonValue');
 
+var _Slider = require('./slider/Slider');
+
 module.exports = {
   address: _Address.AddressComponent,
   base: _Base.BaseComponent,
@@ -106,6 +108,7 @@ module.exports = {
   gmap: _Gmap.GmapComponent,
   jornaya: _Jornaya.JornayaComponent,
   buttonvalue: _ButtonValue.ButtonValueComponent,
+  slider: _Slider.SliderComponent,
   create: function create(component, options, data) {
     var comp = null;
     if (!component.type) {

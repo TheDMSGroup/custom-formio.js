@@ -33,6 +33,7 @@ import { WellComponent } from './well/Well';
 import { GmapComponent } from './gmap/Gmap';
 import { JornayaComponent } from './jornaya/Jornaya';
 import { ButtonValueComponent } from './buttonvalue/ButtonValue';
+import { SliderComponent } from './slider/Slider';
 module.exports = {
   address: AddressComponent,
   base: BaseComponent,
@@ -69,6 +70,7 @@ module.exports = {
   gmap: GmapComponent,
   jornaya: JornayaComponent,
   buttonvalue: ButtonValueComponent,
+  slider: SliderComponent,
   create: function(component, options, data) {
     let comp = null;
     if (!component.type) {

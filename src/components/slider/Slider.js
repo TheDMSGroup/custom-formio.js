@@ -1,6 +1,5 @@
 import { BaseComponent } from '../base/Base';
 import Numeral from 'numeral';
-import Slider from 'rangeslider-js';
 
 export class SliderComponent extends BaseComponent {
 

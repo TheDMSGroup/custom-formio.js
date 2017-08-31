@@ -13,10 +13,6 @@ var _numeral = require('numeral');
 
 var _numeral2 = _interopRequireDefault(_numeral);
 
-var _rangesliderJs = require('rangeslider-js');
-
-var _rangesliderJs2 = _interopRequireDefault(_rangesliderJs);
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }

@@ -40,6 +40,9 @@ export class SliderComponent extends BaseComponent {
     this.input.oninput = function() {
       output.innerText = this.value === min ? Numeral(this.value).format('$0,0') + ' or less' : this.value === max ? Numeral(this.value).format('$0,0') + ' or more' : Numeral(this.value - step).format('$0,0') + ' - ' + Numeral(this.value).format('$0,0');
     }
+    this.input.onchange = function() {
+      output.innerText = this.value === min ? Numeral(this.value).format('$0,0') + ' or less' : this.value === max ? Numeral(this.value).format('$0,0') + ' or more' : Numeral(this.value - step).format('$0,0') + ' - ' + Numeral(this.value).format('$0,0');      
+    }
     
     this.setValue(this.input.value);
 

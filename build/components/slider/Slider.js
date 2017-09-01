@@ -69,6 +69,9 @@ var SliderComponent = exports.SliderComponent = function (_BaseComponent) {
       this.input.oninput = function () {
         output.innerText = this.value === min ? (0, _numeral2.default)(this.value).format('$0,0') + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('$0,0') + ' or more' : (0, _numeral2.default)(this.value - step).format('$0,0') + ' - ' + (0, _numeral2.default)(this.value).format('$0,0');
       };
+      this.input.onchange = function () {
+        output.innerText = this.value === min ? (0, _numeral2.default)(this.value).format('$0,0') + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('$0,0') + ' or more' : (0, _numeral2.default)(this.value - step).format('$0,0') + ' - ' + (0, _numeral2.default)(this.value).format('$0,0');
+      };
 
       this.setValue(this.input.value);
 

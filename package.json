@@ -55,6 +55,7 @@
     "lodash": "^4.17.4",
     "moment": "^2.18.1",
     "native-promise-only": "^0.8.1",
+    "numeral": "^2.0.6",
     "shallow-copy": "0.0.1",
     "signature_pad": "^2.1.1",
     "text-mask-all": "github:text-mask/text-mask",

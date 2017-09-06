@@ -1,7 +1,7 @@
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
-  value: true
+    value: true
 });
 exports.SliderComponent = undefined;
 
@@ -22,96 +22,137 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var SliderComponent = exports.SliderComponent = function (_BaseComponent) {
-  _inherits(SliderComponent, _BaseComponent);
+    _inherits(SliderComponent, _BaseComponent);
 
-  function SliderComponent() {
-    _classCallCheck(this, SliderComponent);
+    function SliderComponent() {
+        _classCallCheck(this, SliderComponent);
 
-    return _possibleConstructorReturn(this, (SliderComponent.__proto__ || Object.getPrototypeOf(SliderComponent)).apply(this, arguments));
-  }
-
-  _createClass(SliderComponent, [{
-    key: 'build',
-    value: function build() {
-
-      this.createElement();
-
-      if (this.component.label) {
-        var label = this.ce('label', 'label', {
-          class: 'control-label'
-        });
-        this.element.appendChild(label);
-        label.innerText = this.component.label;
-      }
-
-      var output = this.ce('div', 'div', { class: 'slider-output', id: 'slider-output' });
-      this.element.appendChild(output);
-
-      this.input = this.createInput(this.element);
-      if (!this.label) {
-        this.addInput(this.input, this.element);
-      }
-
-      var sliderLabels = this.ce('div', 'div', { class: 'sliderLabels', id: 'sliderLabels' });
-      this.element.appendChild(sliderLabels);
-      var minLabel = this.ce('div', 'div', { class: 'minLabel', id: 'minLabel' });
-      var maxLabel = this.ce('div', 'div', { class: 'maxLabel', id: 'maxLabel' });
-
-      sliderLabels.appendChild(minLabel);
-      sliderLabels.appendChild(maxLabel);
-      this.errorContainer = this.element;
-
-      var min = this.component.min;
-      var max = this.component.max;
-      var step = this.component.step;
-
-      output.innerText = this.input.value === min ? this.toCurrency(this.input.value) + ' or less' : this.input.value === max ? (0, _numeral2.default)(this.input.value).format('$0,0') + ' or more' : (0, _numeral2.default)(this.input.value - step).format('$0,0') + ' - ' + (0, _numeral2.default)(this.input.value).format('$0,0');
-      this.input.oninput = function () {
-        output.innerText = this.value === min ? (0, _numeral2.default)(this.value).format('$0,0') + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('$0,0') + ' or more' : (0, _numeral2.default)(this.value - step).format('$0,0') + ' - ' + (0, _numeral2.default)(this.value).format('$0,0');
-      };
-      this.input.onchange = function () {
-        output.innerText = this.value === min ? (0, _numeral2.default)(this.value).format('$0,0') + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('$0,0') + ' or more' : (0, _numeral2.default)(this.value - step).format('$0,0') + ' - ' + (0, _numeral2.default)(this.value).format('$0,0');
-      };
-
-      this.setValue(this.input.value);
-
-      minLabel.innerText = this.toCurrency(this.component.min);
-      maxLabel.innerText = this.toCurrency(this.component.max);
+        return _possibleConstructorReturn(this, (SliderComponent.__proto__ || Object.getPrototypeOf(SliderComponent)).apply(this, arguments));
     }
-  }, {
-    key: 'createInput',
-    value: function createInput(container) {
 
-      var input = this.ce('input', 'input', {
-        type: 'range',
-        class: 'range-slider__range',
-        min: this.component.min,
-        max: this.component.max,
-        step: this.component.step,
-        value: this.component.defaultValue,
-        id: 'range-slider'
-      });
+    _createClass(SliderComponent, [{
+        key: 'build',
+        value: function build() {
 
-      return input;
-    }
-  }, {
-    key: 'toCurrency',
-    value: function toCurrency(amount) {
-      return (0, _numeral2.default)(amount).format('$0,0');
-    }
-  }, {
-    key: 'createElement',
-    value: function createElement() {
-      var className = this.className;
-      if (this.component.label) {
-        className += ' range-slider';
-      }
-      this.element = this.ce('element', 'div', {
-        id: this.id,
-        class: className
-      });
-    }
-  }]);
+            this.createElement();
 
-  return SliderComponent;
+            if (this.component.label) {
+                var label = this.ce('label', 'label', {
+                    class: 'control-label'
+                });
+                this.element.appendChild(label);
+                label.innerText = this.component.label;
+            }
+
+            var output = this.ce('div', 'div', {
+                class: 'slider-output',
+                id: 'slider-output'
+            });
+            this.element.appendChild(output);
+
+            this.input = this.createInput(this.element);
+            if (!this.label) {
+                this.addInput(this.input, this.element);
+            }
+
+            var sliderLabels = this.ce('div', 'div', {
+                class: 'sliderLabels',
+                id: 'sliderLabels'
+            });
+            this.element.appendChild(sliderLabels);
+            var minLabel = this.ce('div', 'div', {
+                class: 'minLabel',
+                id: 'minLabel'
+            });
+            var maxLabel = this.ce('div', 'div', {
+                class: 'maxLabel',
+                id: 'maxLabel'
+            });
+
+            sliderLabels.appendChild(minLabel);
+            sliderLabels.appendChild(maxLabel);
+            this.errorContainer = this.element;
+
+            var min = this.component.min;
+            var max = this.component.max;
+            var step = this.component.step;
+            var sliderType = this.component.sliderType;
+
+            if (sliderType === 'currency') {
+                output.innerText = this.input.value === min ? this.toCurrency(this.input.value) + ' or less' : this.input.value === max ? this.toCurrency(this.input.value) + ' or more' : this.toCurrency(this.input.value - step) + ' - ' + this.toCurrency(this.input.value);
+            } else if (sliderType === 'interest') {
+                output.innerText = this.input.value === min ? this.toInterest(this.input.value) + ' or less' : this.input.value === max ? this.toInterest(this.input.value) + ' or more' : this.toInterest(this.input.value - step) + ' - ' + this.toInterest(this.input.value);
+            }
+
+            this.input.oninput = function () {
+                if (sliderType === 'interest') {
+                    output.innerText = this.value === min ? (0, _numeral2.default)(this.value).format('0.00') + '%' + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('0.00') + '%' + ' or more' : (0, _numeral2.default)(this.value - step).format('0.00') + '%' + ' - ' + (0, _numeral2.default)(this.value).format('0.00') + '%';
+                } else if (sliderType === 'currency') {
+                    output.innerText = this.value === min ? (0, _numeral2.default)(this.value).format('$0,0') + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('$0,0') + ' or more' : (0, _numeral2.default)(this.value - step).format('$0,0') + ' - ' + (0, _numeral2.default)(this.value).format('$0,0');
+                }
+            };
+
+            this.input.onchange = function () {
+                if (sliderType === 'interest') {
+                    output.innerText = this.value === min ? (0, _numeral2.default)(this.value).format('0.00') + '%' + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('0.00') + ' or more' : (0, _numeral2.default)(this.value - step).format('0.00') + '%' + ' - ' + (0, _numeral2.default)(this.value).format('0.00') + '%';
+                } else if (sliderType === 'currency') {
+                    output.innerText = this.value === min ? (0, _numeral2.default)(this.value).format('$0,0') + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('$0,0') + ' or more' : (0, _numeral2.default)(this.value - step).format('$0,0') + ' - ' + (0, _numeral2.default)(this.value).format('$0,0');
+                }
+            };
+
+            if (sliderType === 'currency') {
+                this.setValue(this.input.value);
+            } else if (sliderType === 'interest') {
+                this.setValue((0, _numeral2.default)(this.input.value).format('0.00'));
+            }
+
+            if (sliderType === 'currency') {
+                minLabel.innerText = this.toCurrency(this.component.min);
+                maxLabel.innerText = this.toCurrency(this.component.max);
+            } else if (sliderType === 'interest') {
+                minLabel.innerText = this.toInterest(this.component.min);
+                maxLabel.innerText = this.toInterest(this.component.max);
+            }
+        }
+    }, {
+        key: 'createInput',
+        value: function createInput(container) {
+
+            var input = this.ce('input', 'input', {
+                type: 'range',
+                class: 'range-slider__range',
+                min: this.component.min,
+                max: this.component.max,
+                step: this.component.step,
+                value: this.component.defaultValue,
+                id: 'range-slider'
+            });
+
+            return input;
+        }
+    }, {
+        key: 'toCurrency',
+        value: function toCurrency(amount) {
+            return (0, _numeral2.default)(amount).format('$0,0');
+        }
+    }, {
+        key: 'toInterest',
+        value: function toInterest(amount) {
+            return (0, _numeral2.default)(amount).format('0.00') + '%';
+        }
+    }, {
+        key: 'createElement',
+        value: function createElement() {
+            var className = this.className;
+            if (this.component.label) {
+                className += ' range-slider';
+            }
+            this.element = this.ce('element', 'div', {
+                id: this.id,
+                class: className
+            });
+        }
+    }]);
+
+    return SliderComponent;
 }(_Base.BaseComponent);

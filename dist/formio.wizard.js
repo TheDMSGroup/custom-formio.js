@@ -6975,24 +6975,24 @@ var SliderComponent = exports.SliderComponent = function (_BaseComponent) {
             var sliderType = this.component.sliderType;
 
             if (sliderType === 'currency') {
-                output.innerText = this.input.value === min ? this.toCurrency(this.input.value) + ' or less' : this.input.value === max ? this.toCurrency(this.input.value) + ' or more' : this.toCurrency(this.input.value - step) + ' - ' + this.toCurrency(this.input.value);
+                output.innerText = this.input.value === '0' ? '$0' : this.input.value === min ? this.toCurrency(this.input.value) + ' or less' : this.input.value === max ? this.toCurrency(this.input.value) + ' or more' : this.toCurrency(this.input.value - step) + ' - ' + this.toCurrency(this.input.value);
             } else if (sliderType === 'interest') {
-                output.innerText = this.input.value === min ? this.toInterest(this.input.value) + ' or less' : this.input.value === max ? this.toInterest(this.input.value) + ' or more' : this.toInterest(this.input.value - step) + ' - ' + this.toInterest(this.input.value);
+                output.innerText = this.input.value === '0' ? '0%' : this.input.value === min ? this.toInterest(this.input.value) + ' or less' : this.input.value === max ? this.toInterest(this.input.value) + ' or more' : this.toInterest(this.input.value - step) + ' - ' + this.toInterest(this.input.value);
             }
 
             this.input.oninput = function () {
                 if (sliderType === 'interest') {
-                    output.innerText = this.value === min ? (0, _numeral2.default)(this.value).format('0.00') + '%' + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('0.00') + '%' + ' or more' : (0, _numeral2.default)(this.value - step).format('0.00') + '%' + ' - ' + (0, _numeral2.default)(this.value).format('0.00') + '%';
+                    output.innerText = this.value === '0' ? '0%' : this.value === min ? (0, _numeral2.default)(this.value).format('0.00') + '%' + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('0.00') + '%' + ' or more' : (0, _numeral2.default)(this.value - step).format('0.00') + '%' + ' - ' + (0, _numeral2.default)(this.value).format('0.00') + '%';
                 } else if (sliderType === 'currency') {
-                    output.innerText = this.value === min ? (0, _numeral2.default)(this.value).format('$0,0') + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('$0,0') + ' or more' : (0, _numeral2.default)(this.value - step).format('$0,0') + ' - ' + (0, _numeral2.default)(this.value).format('$0,0');
+                    output.innerText = this.value === '0' ? '$0' : this.value === min ? (0, _numeral2.default)(this.value).format('$0,0') + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('$0,0') + ' or more' : (0, _numeral2.default)(this.value - step).format('$0,0') + ' - ' + (0, _numeral2.default)(this.value).format('$0,0');
                 }
             };
 
             this.input.onchange = function () {
                 if (sliderType === 'interest') {
-                    output.innerText = this.value === min ? (0, _numeral2.default)(this.value).format('0.00') + '%' + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('0.00') + ' or more' : (0, _numeral2.default)(this.value - step).format('0.00') + '%' + ' - ' + (0, _numeral2.default)(this.value).format('0.00') + '%';
+                    output.innerText = this.value === '0' ? '0%' : this.value === min ? (0, _numeral2.default)(this.value).format('0.00') + '%' + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('0.00') + ' or more' : (0, _numeral2.default)(this.value - step).format('0.00') + '%' + ' - ' + (0, _numeral2.default)(this.value).format('0.00') + '%';
                 } else if (sliderType === 'currency') {
-                    output.innerText = this.value === min ? (0, _numeral2.default)(this.value).format('$0,0') + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('$0,0') + ' or more' : (0, _numeral2.default)(this.value - step).format('$0,0') + ' - ' + (0, _numeral2.default)(this.value).format('$0,0');
+                    output.innerText = this.value === '0' ? '$0' : this.value === min ? (0, _numeral2.default)(this.value).format('$0,0') + ' or less' : this.value === max ? (0, _numeral2.default)(this.value).format('$0,0') + ' or more' : (0, _numeral2.default)(this.value - step).format('$0,0') + ' - ' + (0, _numeral2.default)(this.value).format('$0,0');
                 }
             };
 

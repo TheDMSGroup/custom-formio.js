@@ -52,24 +52,24 @@ export class SliderComponent extends BaseComponent {
         let sliderType = this.component.sliderType;
 
         if (sliderType === 'currency') {
-            output.innerText = this.input.value === min ? this.toCurrency(this.input.value) + ' or less' : this.input.value === max ? this.toCurrency(this.input.value) + ' or more' : this.toCurrency(this.input.value - step) + ' - ' + this.toCurrency(this.input.value);
+            output.innerText = this.input.value === '0' ? '$0' : this.input.value === min  ? this.toCurrency(this.input.value) + ' or less' : this.input.value === max ? this.toCurrency(this.input.value) + ' or more' : this.toCurrency(this.input.value - step) + ' - ' + this.toCurrency(this.input.value);
         } else if (sliderType === 'interest') {
-            output.innerText = this.input.value === min ? this.toInterest(this.input.value) + ' or less' : this.input.value === max ? this.toInterest(this.input.value) + ' or more' : this.toInterest(this.input.value - step) + ' - ' + this.toInterest(this.input.value);
+            output.innerText = this.input.value === '0' ? '0%' : this.input.value === min  ? this.toInterest(this.input.value) + ' or less' : this.input.value === max ? this.toInterest(this.input.value) + ' or more' : this.toInterest(this.input.value - step) + ' - ' + this.toInterest(this.input.value);
         }
 
         this.input.oninput = function () {
             if (sliderType === 'interest') {
-                output.innerText = this.value === min ? Numeral(this.value).format('0.00') + '%' + ' or less' : this.value === max ? Numeral(this.value).format('0.00') + '%' + ' or more' : Numeral(this.value - step).format('0.00') + '%' + ' - ' + Numeral(this.value).format('0.00') + '%';
+                output.innerText = this.value === '0' ? '0%' : this.value === min ? Numeral(this.value).format('0.00') + '%' + ' or less' : this.value === max ? Numeral(this.value).format('0.00') + '%' + ' or more' : Numeral(this.value - step).format('0.00') + '%' + ' - ' + Numeral(this.value).format('0.00') + '%';
             } else if (sliderType === 'currency') {
-                output.innerText = this.value === min ? Numeral(this.value).format('$0,0') + ' or less' : this.value === max ? Numeral(this.value).format('$0,0') + ' or more' : Numeral(this.value - step).format('$0,0') + ' - ' + Numeral(this.value).format('$0,0');
+                output.innerText = this.value === '0' ? '$0' : this.value === min ? Numeral(this.value).format('$0,0') + ' or less' : this.value === max ? Numeral(this.value).format('$0,0') + ' or more' : Numeral(this.value - step).format('$0,0') + ' - ' + Numeral(this.value).format('$0,0');
             }
         };
 
         this.input.onchange = function () {
             if (sliderType === 'interest') {
-                output.innerText = this.value === min ? Numeral(this.value).format('0.00') + '%' + ' or less' : this.value === max ? Numeral(this.value).format('0.00') + ' or more' : Numeral(this.value - step).format('0.00') + '%' + ' - ' + Numeral(this.value).format('0.00') + '%';
+                output.innerText = this.value === '0' ? '0%' : this.value === min ? Numeral(this.value).format('0.00') + '%' + ' or less' : this.value === max ? Numeral(this.value).format('0.00') + ' or more' : Numeral(this.value - step).format('0.00') + '%' + ' - ' + Numeral(this.value).format('0.00') + '%';
             } else if (sliderType === 'currency') {
-                output.innerText = this.value === min ? Numeral(this.value).format('$0,0') + ' or less' : this.value === max ? Numeral(this.value).format('$0,0') + ' or more' : Numeral(this.value - step).format('$0,0') + ' - ' + Numeral(this.value).format('$0,0');
+                output.innerText = this.value === '0' ? '$0' : this.value === min ? Numeral(this.value).format('$0,0') + ' or less' : this.value === max ? Numeral(this.value).format('$0,0') + ' or more' : Numeral(this.value - step).format('$0,0') + ' - ' + Numeral(this.value).format('$0,0');
             }
         };
 

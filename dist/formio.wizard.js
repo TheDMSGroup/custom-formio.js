@@ -2110,7 +2110,8 @@ var BaseComponent = function () {
         this.inputMask = (0, _vanilla2.default)({
           inputElement: input,
           mask: mask,
-          placeholderChar: "\u2000"
+          placeholderChar: "\u2000",
+          guide: false
         });
         if (!this.component.placeholder) {
           input.setAttribute('placeholder', this.maskPlaceholder(mask));

@@ -14,7 +14,6 @@ export class FormioWizard extends FormioForm {
     this._nextPage = 1;
     // DMS
     this.buttons = [];
-    this.wizardNav = false;
   }
 
   setPage(num) {

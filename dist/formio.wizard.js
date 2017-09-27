@@ -9630,7 +9630,6 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
     _this._nextPage = 1;
     // DMS
     _this.buttons = [];
-    _this.wizardNav = false;
     return _this;
   }
 

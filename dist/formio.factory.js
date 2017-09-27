@@ -9802,11 +9802,10 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
       // Validate the form builed, before go to the next page
       if (this.checkValidity(this.submission.data, true)) {
         // DMS
-
+        this.checkData(this.submission.data, true);
         if (this.beforeNextPageCallback) {
           this.beforeNextPageCallback(this, this.submission.data, this.nextPageWithValidation);
         } else {
-          this.checkData(this.submission.data, true);
           return this.beforeNext().then(function () {
             _this3.history.push(_this3.page);
             return _this3.setPage(_this3.getNextPage(_this3.submission.data, _this3.page)).then(function () {
@@ -10152,16 +10151,6 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
 
       // Add the wizard navigation
       this.element.appendChild(this.wizardNav);
-    }
-  }, {
-    key: 'getComponents',
-    value: function getComponents() {
-      // Set the components based on all components.
-      var components = [];
-      (0, _each2.default)(this.allComponents, function (comps) {
-        components = components.concat(comps);
-      });
-      return components;
     }
   }]);
 

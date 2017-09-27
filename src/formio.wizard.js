@@ -104,11 +104,10 @@ export class FormioWizard extends FormioForm {
     // Validate the form builed, before go to the next page
     if (this.checkValidity(this.submission.data, true)) {
       // DMS
-
+      this.checkData(this.submission.data, true);
       if (this.beforeNextPageCallback) {
           this.beforeNextPageCallback(this, this.submission.data, this.nextPageWithValidation);
       } else {
-          this.checkData(this.submission.data, true);
           return this.beforeNext().then(() => {
               this.history.push(this.page);
               return this.setPage(this.getNextPage(this.submission.data, this.page)).then(() => {
@@ -439,15 +438,6 @@ export class FormioWizard extends FormioForm {
 
     // Add the wizard navigation
     this.element.appendChild(this.wizardNav);
-  }
-
-  getComponents() {
-    // Set the components based on all components.
-    let components = [];
-    each(this.allComponents, (comps) => {
-      components = components.concat(comps);
-    });
-    return components;
   }
 }
 

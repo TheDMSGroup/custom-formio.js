@@ -979,7 +979,7 @@ var BaseComponent = function () {
           validate: !noValidate
         });*/
 
-        if (this.type !== 'textfield' && this.type !== 'email' && this.type !== 'select' || (this.type === 'textfield' || this.type === 'email' || this.type === 'select') && this.error) {
+        if (this.type !== 'textfield' && this.type !== 'email' || (this.type === 'textfield' || this.type === 'email') && this.error) {
           this.emit('componentChange', {
             component: this.component,
             value: this.value,

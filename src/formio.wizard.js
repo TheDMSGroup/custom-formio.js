@@ -4,22 +4,28 @@ import FormioForm from './formio.form';
 import Formio from './formio';
 import FormioUtils from './utils';
 import each from 'lodash/each';
+import clone from 'lodash/clone';
 export class FormioWizard extends FormioForm {
   constructor(element, options) {
     super(element, options);
-    this.wizard = null;
     this.pages = [];
     this.page = 0;
     this.history = [];
+    this.allComponents = {};
     this._nextPage = 1;
-    // DMS
     this.buttons = [];
   }
 
   setPage(num) {
     if (num >= 0 && num < this.pages.length) {
       this.page = num;
-      return super.setForm(this.currentPage());
+      this.buttons = [];
+      let page = this.currentPage();
+      this.buttons = page.buttons;
+      return super.setForm(this.currentPage()).then(() => {
+        // Save the components for when we finally submit.
+        this.allComponents[this.page] = clone(this.components);
+      });
     }
     return Promise.reject('Page not found');
   }
@@ -82,8 +88,11 @@ export class FormioWizard extends FormioForm {
     return this.page - 1;
   }
 
+  // DMS
+
   nextPage() {
-    // DMSs
+    // DMS
+
     for (var i=0; i < this.components.length; i++) {
       if (this.components[i].type === 'checkbox' && this.components[i].component.validate.required && (this.components[i].value === null || !this.components[i].value)) {
         delete this.submission.data[this.components[i].component.key];
@@ -91,25 +100,22 @@ export class FormioWizard extends FormioForm {
 
       i++;
     }
-    
+
     // Validate the form builed, before go to the next page
     if (this.checkValidity(this.submission.data, true)) {
-      this.checkData(this.submission.data, {
-        noValidate: true
-      });
-
       // DMS
+
       if (this.beforeNextPageCallback) {
           this.beforeNextPageCallback(this, this.submission.data, this.nextPageWithValidation);
       } else {
-        this.checkData(this.submission.data, true);
-        return this.beforeNext().then(() => {
-          this.history.push(this.page);
-          return this.setPage(this.getNextPage(this.submission.data, this.page)).then(() => {
-            this._nextPage = this.getNextPage(this.submission.data, this.page);
-            this.emit('nextPage', {page: this.page, submission: this.submission});
+          this.checkData(this.submission.data, true);
+          return this.beforeNext().then(() => {
+              this.history.push(this.page);
+              return this.setPage(this.getNextPage(this.submission.data, this.page)).then(() => {
+                  this._nextPage = this.getNextPage(this.submission.data, this.page);
+                  this.emit('nextPage', {page: this.page, submission: this.submission});
+              });
           });
-        });
       }
     }
     else {
@@ -120,7 +126,16 @@ export class FormioWizard extends FormioForm {
   // DMS
 
   nextPageWithValidation(thisInstance, additionalFieldsValidationData) {
- 
+    //console.log('nextPageWithValidation');
+
+    //console.log('----- ----- ----- ----- -----');
+    //console.log(thisInstance);
+
+    //console.log('additionalFieldsValidationData:');
+    //console.dir(additionalFieldsValidationData);
+
+    //console.log('----- ----- ----- ----- -----');
+
     let proceedToNextPage = false;
 
     // If no data given, then proceed to the next page.
@@ -159,6 +174,8 @@ export class FormioWizard extends FormioForm {
           proceedToNextPage = true;
       }
     }
+
+    //console.log('proceedToNextPage' + ' = ' + proceedToNextPage);
 
     if (proceedToNextPage) {
       thisInstance.checkData(thisInstance.submission.data, true);
@@ -213,11 +230,15 @@ export class FormioWizard extends FormioForm {
 
   setForm(form) {
     this.pages = [];
-    // DMS
     this.buttons = [];
+    this.wizard = form;
+
     each(form.components, (component) => {
       if (component.type === 'panel') {
         this.pages.push(component);
+      }
+      else if (component.key) {
+        this.allComponents[component.key] = this.addComponent(component, this.element, this.data);
       }
     });
     return this.setPage(this.page);
@@ -244,11 +265,6 @@ export class FormioWizard extends FormioForm {
   }
 
   createWizardHeader() {
-    // DMS
-
-    if (!this.wizardNav) {
-      return;
-    }
 
     let currentPage = this.currentPage();
     currentPage.breadcrumb = currentPage.breadcrumb || 'default';
@@ -295,11 +311,39 @@ export class FormioWizard extends FormioForm {
   onSubmissionChange(changed) {
     super.onSubmissionChange(changed);
 
+    // Only rebuild if there is a page change.
+    let pageIndex = 0;
+    let rebuild = false;
+    each(this.wizard.components, (component) => {
+      if (component.type !== 'panel') {
+        return;
+      }
+
+      if (FormioUtils.hasCondition(component)) {
+        let hasPage = this.pages && this.pages[pageIndex] && (this.pageId(this.pages[pageIndex]) === this.pageId(component));
+        let shouldShow = FormioUtils.checkCondition(component, this.data, this.data);
+        if ((shouldShow && !hasPage) || (!shouldShow && hasPage)) {
+          rebuild = true;
+          return false;
+        }
+        if (shouldShow) {
+          pageIndex++;
+        }
+      }
+      else {
+        pageIndex++;
+      }
+    });
+
+    if (rebuild) {
+      this.setForm(this.wizard);
+    }
+
     // Update Wizard Nav
     let nextPage = this.getNextPage(this.submission.data, this.page);
     if (this._nextPage != nextPage) {
       this.element.removeChild(this.wizardNav);
-      this.createWizardNav();
+      this.buildWizardNav();
       this.emit('updateWizardNav', {oldpage: this._nextPage, newpage: nextPage, submission: this.submission});
       this._nextPage = nextPage;
     }

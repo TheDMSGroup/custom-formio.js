@@ -1,7 +1,35 @@
 'use strict';
-const _get = require('lodash/get');
+import _clone from 'lodash/clone';
+import _get from 'lodash/get';
+import _isString from 'lodash/isString';
+import _round from 'lodash/round';
+import _pad from 'lodash/pad';
+import _chunk from 'lodash/chunk';
+import _isNaN from 'lodash/isNaN';
+import compile from 'lodash/template';
 import jsonLogic from 'json-logic-js';
-module.exports = {
+
+const FormioUtils = {
+  jsonLogic, // Share
+
+  /**
+   * Determines the boolean value of a setting.
+   *
+   * @param value
+   * @return {boolean}
+   */
+  boolValue: function(value) {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+    else if (typeof value === 'string') {
+      return (value.toLowerCase() === 'true');
+    }
+    else {
+      return !!value;
+    }
+  },
+
   /**
    * Determine if a component is a layout component or not.
    *
@@ -30,8 +58,10 @@ module.exports = {
    *   Whether or not to include layout components.
    * @param {String} path
    *   The current data path of the element. Example: data.user.firstName
+   * @param {Object} parent
+   *   The parent object.
    */
-  eachComponent: function eachComponent(components, fn, includeAll, path) {
+  eachComponent: function eachComponent(components, fn, includeAll, path, parent) {
     if (!components) return;
     path = path || '';
     components.forEach(function(component) {
@@ -40,6 +70,16 @@ module.exports = {
       var hasComps = component.components && Array.isArray(component.components);
       var noRecurse = false;
       var newPath = component.key ? (path ? (path + '.' + component.key) : component.key) : '';
+
+      // Keep track of parent references.
+      if (parent) {
+        // Ensure we don't create infinite JSON structures.
+        component.parent = _clone(parent);
+        delete component.parent.components;
+        delete component.parent.componentMap;
+        delete component.parent.columns;
+        delete component.parent.rows;
+      }
 
       if (includeAll || component.tree || (!hasColumns && !hasRows && !hasComps)) {
         noRecurse = fn(component, newPath);
@@ -55,21 +95,46 @@ module.exports = {
       if (!noRecurse) {
         if (hasColumns) {
           component.columns.forEach(function(column) {
-            eachComponent(column.components, fn, includeAll, subPath());
+            eachComponent(column.components, fn, includeAll, subPath(), parent ? component : null);
           });
         }
 
         else if (hasRows) {
-          [].concat.apply([], component.rows).forEach(function(row) {
-            eachComponent(row.components, fn, includeAll, subPath());
+          component.rows.forEach(function(row) {
+            row.forEach((column) => {
+              eachComponent(column.components, fn, includeAll, subPath(), parent ? component : null);
+            });
           });
         }
 
         else if (hasComps) {
-          eachComponent(component.components, fn, includeAll, subPath());
+          eachComponent(component.components, fn, includeAll, subPath(), parent ? component : null);
         }
       }
     });
+  },
+
+  /**
+   * Matches if a component matches the query.
+   *
+   * @param component
+   * @param query
+   * @return {boolean}
+   */
+  matchComponent: function(component, query) {
+    if (typeof query === 'string') {
+      return component.key === query;
+    }
+    else {
+      var matches = false;
+      for (var search in query) {
+        matches = (_get(component, search) === query[search]);
+        if (!matches) {
+          break;
+        }
+      }
+      return matches;
+    }
   },
 
   /**
@@ -77,20 +142,40 @@ module.exports = {
    *
    * @param {Object} components
    *   The components to iterate.
-   * @param {String} key
-   *   The key of the component to get.
+   * @param {String|Object} key
+   *   The key of the component to get, or a query of the component to search.
    *
    * @returns {Object}
    *   The component that matches the given key, or undefined if not found.
    */
   getComponent: function getComponent(components, key) {
     var result;
-    module.exports.eachComponent(components, function(component) {
-      if (component.key === key) {
+    FormioUtils.eachComponent(components, function(component, path) {
+      if (FormioUtils.matchComponent(component, key)) {
+        component.path = path;
         result = component;
+        return true;
       }
     });
     return result;
+  },
+
+  /**
+   * Finds a component provided a query of properties of that component.
+   *
+   * @param components
+   * @param query
+   * @return {*}
+   */
+  findComponents: function findComponents(components, query) {
+    var results = [];
+    FormioUtils.eachComponent(components, function(component, path) {
+      if (FormioUtils.matchComponent(component, query)) {
+        component.path = path;
+        results.push(component);
+      }
+    }, true);
+    return results;
   },
 
   /**
@@ -106,7 +191,7 @@ module.exports = {
    */
   flattenComponents: function flattenComponents(components, includeAll) {
     var flattened = {};
-    module.exports.eachComponent(components, function(component, path) {
+    FormioUtils.eachComponent(components, function(component, path) {
       flattened[path] = component;
     }, includeAll);
     return flattened;
@@ -123,6 +208,100 @@ module.exports = {
     return (component.hasOwnProperty('customConditional') && component.customConditional) ||
       (component.hasOwnProperty('conditional') && component.conditional && component.conditional.when) ||
       (component.hasOwnProperty('conditional') && component.conditional && component.conditional.json);
+  },
+
+  /**
+   * Extension of standard #parseFloat(value) function, that also clears input string.
+   *
+   * @param {any} value
+   *   The value to parse.
+   *
+   * @returns {Number}
+   *   Parsed value.
+   */
+  parseFloat: function(value) {
+    return parseFloat(_isString(value)
+      ? value.replace(/[^\de.+-]/gi, '')
+      : value);
+  },
+
+  /**
+   * Formats provided value in way how Currency component uses it.
+   *
+   * @param {any} value
+   *   The value to format.
+   *
+   * @returns {String}
+   *   Value formatted for Currency component.
+   */
+  formatAsCurrency: function(value) {
+    const parsedValue = this.parseFloat(value);
+
+    if (_isNaN(parsedValue)) {
+      return '';
+    }
+
+    const parts = _round(parsedValue, 2)
+      .toString()
+      .split('.');
+    parts[0] = _chunk(Array.from(parts[0]).reverse(), 3)
+      .reverse()
+      .map(function(part) {
+        return part
+          .reverse()
+          .join('');
+      })
+      .join(',');
+    parts[1] = _pad(parts[1], 2, '0');
+    return parts.join('.');
+  },
+
+  /**
+   * Escapes RegEx characters in provided String value.
+   *
+   * @param {String} value
+   *   String for escaping RegEx characters.
+   * @returns {string}
+   *   String with escaped RegEx characters.
+   */
+  escapeRegExCharacters: function(value) {
+    return value.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+  },
+
+  /**
+   * Checks the calculated value for a provided component and data.
+   *
+   * @param {Object} component
+   *   The component to check for the calculated value.
+   * @param {Object} submission
+   *   A submission object.
+   * @param data
+   *   The full submission data.
+   */
+  checkCalculated: function(component, submission, data) {
+    // Process calculated value stuff if present.
+    if (component.calculateValue) {
+      if (typeof component.calculateValue === 'string') {
+        try {
+          const util = this;
+          data[component.key] = eval('(function(data, util) { var value = [];' + component.calculateValue.toString() + '; return value; })(data, util)');
+        }
+        catch (e) {
+          console.warn('An error occurred calculating a value for ' + component.key, e);
+        }
+      }
+      else {
+        try {
+          data[component.key] = FormioUtils.jsonLogic.apply(component.calculateValue, {
+            data: submission ? submission.data : data,
+            row: data
+          });
+        }
+        catch (e) {
+          console.warn('An error occurred calculating a value for ' + component.key, e);
+        }
+      }
+    }
   },
 
   /**
@@ -205,7 +384,7 @@ module.exports = {
         return null;
       }
 
-      if (typeof data === 'object' && !(data instanceof Array)) {
+      if (typeof data === 'object' && !(data instanceof Array) && data !== null) {
         if (data.hasOwnProperty(key)) {
           return data[key];
         }
@@ -234,8 +413,40 @@ module.exports = {
    * @returns {XML|string|*|void}
    */
   interpolate: function(string, data) {
-    return string.replace(/\{\{\s*([^\s]*)\s*\}\}/g, function(match, token) {
-      return _get(data, token);
+    const templateSettings = {
+      evaluate: /\{\%(.+?)\%\}/g,
+      interpolate: /\{\{(.+?)\}\}/g,
+      escape: /\{\{\{(.+?)\}\}\}/g
+    };
+    try {
+      return compile(string, templateSettings)(data);
+    }
+    catch (err) {
+      console.warn('Error interpolating template', err, string, data);
+    }
+  },
+
+  /**
+   * Make a filename guaranteed to be unique.
+   * @param name
+   * @returns {string}
+   */
+  uniqueName: function(name) {
+    var parts = name.toLowerCase().replace(/[^0-9a-z\.]/g, '').split('.');
+    var fileName = parts[0];
+    var ext = '';
+    if (parts.length > 1) {
+      ext = '.' + parts[(parts.length - 1)];
+    }
+    return fileName.substr(0, 10) + '-' + this.guid() + ext;
+  },
+
+  guid: function() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random()*16|0, v = c === 'x' ? r : (r&0x3|0x8);
+      return v.toString(16);
     });
   }
 };
+
+module.exports = global.FormioUtils = FormioUtils;

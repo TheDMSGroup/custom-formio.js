@@ -2,34 +2,25 @@
 import Promise from "native-promise-only";
 import FormioForm from './formio.form';
 import Formio from './formio';
+import FormioUtils from './utils';
 import each from 'lodash/each';
-import clone from 'lodash/clone';
-import jsonLogic from 'json-logic-js';
 export class FormioWizard extends FormioForm {
   constructor(element, options) {
     super(element, options);
+    this.wizard = null;
     this.pages = [];
     this.page = 0;
     this.history = [];
-    this.allComponents = {};
     this._nextPage = 1;
-    this.buttons = [];
-
     // DMS
-
+    this.buttons = [];
     this.wizardNav = false;
   }
 
   setPage(num) {
     if (num >= 0 && num < this.pages.length) {
       this.page = num;
-      this.buttons = [];
-      let page = this.currentPage();
-      this.buttons = page.buttons;
-      return super.setForm(this.currentPage()).then(() => {
-        // Save the components for when we finally submit.
-        this.allComponents[this.page] = clone(this.components);
-      });
+      return super.setForm(this.currentPage());
     }
     return Promise.reject('Page not found');
   }
@@ -43,7 +34,9 @@ export class FormioWizard extends FormioForm {
         // Allow for script execution.
         if (typeof form.nextPage === 'string') {
           try {
-            eval(form.nextPage.toString());
+            let next = page;
+            eval('(function(data) {' + form.nextPage.toString() + '})(data)');
+            page = next;
             if (!isNaN(parseInt(page, 10)) && isFinite(page)) {
               return page;
             }
@@ -61,7 +54,7 @@ export class FormioWizard extends FormioForm {
         }
         // Or use JSON Logic.
         else {
-          let result = jsonLogic.apply(form.nextPage, {
+          let result = FormioUtils.jsonLogic.apply(form.nextPage, {
             data: data,
             page: page,
             form: form
@@ -90,11 +83,8 @@ export class FormioWizard extends FormioForm {
     return this.page - 1;
   }
 
-  // DMS
-
   nextPage() {
-    // DMS
-
+    // DMSs
     for (var i=0; i < this.components.length; i++) {
       if (this.components[i].type === 'checkbox' && this.components[i].component.validate.required && (this.components[i].value === null || !this.components[i].value)) {
         delete this.submission.data[this.components[i].component.key];
@@ -102,22 +92,25 @@ export class FormioWizard extends FormioForm {
 
       i++;
     }
-
+    
     // Validate the form builed, before go to the next page
     if (this.checkValidity(this.submission.data, true)) {
-      // DMS
+      this.checkData(this.submission.data, {
+        noValidate: true
+      });
 
+      // DMS
       if (this.beforeNextPageCallback) {
           this.beforeNextPageCallback(this, this.submission.data, this.nextPageWithValidation);
       } else {
-          this.checkData(this.submission.data, true);
-          return this.beforeNext().then(() => {
-              this.history.push(this.page);
-              return this.setPage(this.getNextPage(this.submission.data, this.page)).then(() => {
-                  this._nextPage = this.getNextPage(this.submission.data, this.page);
-                  this.emit('nextPage', {page: this.page, submission: this.submission});
-              });
+        this.checkData(this.submission.data, true);
+        return this.beforeNext().then(() => {
+          this.history.push(this.page);
+          return this.setPage(this.getNextPage(this.submission.data, this.page)).then(() => {
+            this._nextPage = this.getNextPage(this.submission.data, this.page);
+            this.emit('nextPage', {page: this.page, submission: this.submission});
           });
+        });
       }
     }
     else {
@@ -128,16 +121,7 @@ export class FormioWizard extends FormioForm {
   // DMS
 
   nextPageWithValidation(thisInstance, additionalFieldsValidationData) {
-    //console.log('nextPageWithValidation');
-
-    //console.log('----- ----- ----- ----- -----');
-    //console.log(thisInstance);
-
-    //console.log('additionalFieldsValidationData:');
-    //console.dir(additionalFieldsValidationData);
-
-    //console.log('----- ----- ----- ----- -----');
-
+ 
     let proceedToNextPage = false;
 
     // If no data given, then proceed to the next page.
@@ -176,8 +160,6 @@ export class FormioWizard extends FormioForm {
           proceedToNextPage = true;
       }
     }
-
-    //console.log('proceedToNextPage' + ' = ' + proceedToNextPage);
 
     if (proceedToNextPage) {
       thisInstance.checkData(thisInstance.submission.data, true);
@@ -232,22 +214,11 @@ export class FormioWizard extends FormioForm {
 
   setForm(form) {
     this.pages = [];
-    this.buttons = [];
-
     // DMS
-
-    this.wizardNav = false;
-
-    if (form.enableNavigation) {
-      this.wizardNav = true;
-    }
-
+    this.buttons = [];
     each(form.components, (component) => {
       if (component.type === 'panel') {
         this.pages.push(component);
-      }
-      else if (component.key) {
-        this.allComponents[component.key] = this.addComponent(component, this.element, this.data);
       }
     });
     return this.setPage(this.page);

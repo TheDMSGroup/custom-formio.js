@@ -3,11 +3,15 @@ import Choices from 'choices.js';
 import Formio from '../../formio';
 import _each from 'lodash/each';
 import _get from 'lodash/get';
+import _debounce from 'lodash/debounce';
 import _isEmpty from 'lodash/isEmpty';
 import _isArray from 'lodash/isArray';
 export class SelectComponent extends BaseComponent {
   constructor(component, options, data) {
     super(component, options, data);
+
+     // Trigger an update.
+     this.triggerUpdate = _debounce(this.updateItems.bind(this), 200);
 
     // If they wish to refresh on a value, then add that here.
     if (this.component.refreshOn) {
@@ -22,10 +26,20 @@ export class SelectComponent extends BaseComponent {
     }
   }
 
+  refreshItems() {
+    this.triggerUpdate();
+    if (this.component.clearOnRefresh) {
+      this.setValue(null);
+    }
+  }
+
   elementInfo() {
     let info = super.elementInfo();
     info.type = 'select';
     info.changeEvent = 'change';
+    if (info.attr.placeholder) {
+      delete info.attr.placeholder;
+    }
     return info;
   }
 
@@ -108,7 +122,12 @@ export class SelectComponent extends BaseComponent {
       .catch(() => console.warn('Unable to load resources for ' + this.component.key))
   }
 
-  updateItems() {
+  updateItems(searchInput) {
+    if (!this.component.data) {
+      console.warn('Select component ' + this.component.key + ' does not have data configuration.');
+      return;
+    }
+
     switch(this.component.dataSrc) {
       case 'values':
         this.component.valueProperty = 'value';
@@ -128,15 +147,23 @@ export class SelectComponent extends BaseComponent {
         }
         break;
       case 'resource':
+        let resourceUrl = this.options.formio ? this.options.formio.formsUrl : Formio.getProjectUrl() + '/form';
+        resourceUrl += ('/' + this.component.data.resource + '/submission');
+
         try {
-          this.loadItems(Formio.getAppUrl() + '/form/' + this.component.data.resource + '/submission');
+          this.loadItems(resourceUrl, searchInput, this.requestHeaders);
         }
         catch (err) {
           console.warn('Unable to load resources for ' + this.component.key);
         }
         break;
       case 'url':
-        this.loadItems(this.component.data.url, null, new Headers(), {
+        let url = this.component.data.url;
+        if (url.substr(0, 1) === '/') {
+          url = Formio.getBaseUrl() + this.component.data.url;
+        }
+
+        this.loadItems(url, searchInput, this.requestHeaders, {
           noToken: true
         });
         break;
@@ -148,7 +175,6 @@ export class SelectComponent extends BaseComponent {
     if (this.component.multiple) {
       input.setAttribute('multiple', true);
     }
-    var self = this;
     this.choices = new Choices(input, {
       placeholder: !!this.component.placeholder,
       placeholderValue: this.component.placeholder,
@@ -156,19 +182,19 @@ export class SelectComponent extends BaseComponent {
 
       // DMS
       searchEnabled: false,
-      shouldSort: false,
       removeItems: false,
 
       itemSelectText: '',
       classNames: {
         containerOuter: 'choices form-group formio-choices',
         containerInner: 'form-control'
-      }
+      },
+      shouldSort: false
     });
     if (this.disabled) {
       this.choices.disable();
     }
-    this.updateItems();
+    this.triggerUpdate();
   }
 
   set disabled(disabled) {
@@ -185,16 +211,25 @@ export class SelectComponent extends BaseComponent {
   }
 
   getValue() {
+    if (!this.choices) {
+      return;
+    }
     return this.choices.getValue(true);
   }
 
   setValue(value, noUpdate, noValidate) {
     this.value = value;
-    if (value && this.choices) {
-      if (this.choices.store) {
+    if (this.choices) {
+      if (value && this.choices.store) {
         // Search for the choice.
         const choices = this.choices.store.getChoices();
         const foundChoice = choices.find((choice) => {
+          // For resources we may have two different instances of the same resource
+          // Unify them so we don't have two copies of the same thing in the dropdown
+          // and so the correct resource gets selected in the first place
+          if (choice.value._id && value._id && choice.value._id === value._id) {
+            value = choice.value;
+          }
           return choice.value === value;
         });
 
@@ -205,11 +240,36 @@ export class SelectComponent extends BaseComponent {
       }
 
       // Now set the value.
-      this.choices.setValueByChoice(_isArray(value) ? value : [value]);
+      if (value) {
+        setTimeout(() => this.choices.setValueByChoice(_isArray(value) ? value : [value]), 10);
+      }
+      else {
+        this.choices.removeActiveItems();
+      }
     }
     if (!noUpdate) {
       this.updateValue(noValidate);
     }
+  }
+
+  /**
+   * Check if a component is eligible for multiple validation
+   *
+   * @return {boolean}
+   */
+  validateMultiple(value) {
+    // Select component will contain one input when flagged as multiple.
+    return false;
+  }
+
+  /**
+   * Ouput this select dropdown as a string value.
+   * @return {*}
+   */
+  asString(value) {
+    value = value || this.getValue();
+    value = (typeof value !== 'object') ? {label: value} : value;
+    return this.itemTemplate(value);
   }
 
   destroy() {

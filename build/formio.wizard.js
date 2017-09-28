@@ -21,6 +21,10 @@ var _formio3 = require('./formio');
 
 var _formio4 = _interopRequireDefault(_formio3);
 
+var _utils = require('./utils');
+
+var _utils2 = _interopRequireDefault(_utils);
+
 var _each = require('lodash/each');
 
 var _each2 = _interopRequireDefault(_each);
@@ -28,10 +32,6 @@ var _each2 = _interopRequireDefault(_each);
 var _clone = require('lodash/clone');
 
 var _clone2 = _interopRequireDefault(_clone);
-
-var _jsonLogicJs = require('json-logic-js');
-
-var _jsonLogicJs2 = _interopRequireDefault(_jsonLogicJs);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -55,10 +55,6 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
     _this.allComponents = {};
     _this._nextPage = 1;
     _this.buttons = [];
-
-    // DMS
-
-    _this.wizardNav = false;
     return _this;
   }
 
@@ -90,7 +86,9 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
           // Allow for script execution.
           if (typeof form.nextPage === 'string') {
             try {
-              eval(form.nextPage.toString());
+              var next = page;
+              eval('(function(data) {' + form.nextPage.toString() + '})(data)');
+              page = next;
               if (!isNaN(parseInt(page, 10)) && isFinite(page)) {
                 return page;
               }
@@ -107,7 +105,7 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
           }
           // Or use JSON Logic.
           else {
-              var result = _jsonLogicJs2.default.apply(form.nextPage, {
+              var result = _utils2.default.jsonLogic.apply(form.nextPage, {
                 data: data,
                 page: page,
                 form: form
@@ -157,11 +155,10 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
       // Validate the form builed, before go to the next page
       if (this.checkValidity(this.submission.data, true)) {
         // DMS
-
+        this.checkData(this.submission.data, true);
         if (this.beforeNextPageCallback) {
           this.beforeNextPageCallback(this, this.submission.data, this.nextPageWithValidation);
         } else {
-          this.checkData(this.submission.data, true);
           return this.beforeNext().then(function () {
             _this3.history.push(_this3.page);
             return _this3.setPage(_this3.getNextPage(_this3.submission.data, _this3.page)).then(function () {
@@ -296,14 +293,7 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
 
       this.pages = [];
       this.buttons = [];
-
-      // DMS
-
-      this.wizardNav = false;
-
-      if (form.enableNavigation) {
-        this.wizardNav = true;
-      }
+      this.wizard = form;
 
       (0, _each2.default)(form.components, function (component) {
         if (component.type === 'panel') {
@@ -340,12 +330,6 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
     key: 'createWizardHeader',
     value: function createWizardHeader() {
       var _this6 = this;
-
-      // DMS
-
-      if (!this.wizardNav) {
-        return;
-      }
 
       var currentPage = this.currentPage();
       currentPage.breadcrumb = currentPage.breadcrumb || 'default';
@@ -391,7 +375,36 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
   }, {
     key: 'onSubmissionChange',
     value: function onSubmissionChange(changed) {
+      var _this7 = this;
+
       _get(FormioWizard.prototype.__proto__ || Object.getPrototypeOf(FormioWizard.prototype), 'onSubmissionChange', this).call(this, changed);
+
+      // Only rebuild if there is a page change.
+      var pageIndex = 0;
+      var rebuild = false;
+      (0, _each2.default)(this.wizard.components, function (component) {
+        if (component.type !== 'panel') {
+          return;
+        }
+
+        if (_utils2.default.hasCondition(component)) {
+          var hasPage = _this7.pages && _this7.pages[pageIndex] && _this7.pageId(_this7.pages[pageIndex]) === _this7.pageId(component);
+          var shouldShow = _utils2.default.checkCondition(component, _this7.data, _this7.data);
+          if (shouldShow && !hasPage || !shouldShow && hasPage) {
+            rebuild = true;
+            return false;
+          }
+          if (shouldShow) {
+            pageIndex++;
+          }
+        } else {
+          pageIndex++;
+        }
+      });
+
+      if (rebuild) {
+        this.setForm(this.wizard);
+      }
 
       // Update Wizard Nav
       var nextPage = this.getNextPage(this.submission.data, this.page);
@@ -405,7 +418,7 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
   }, {
     key: 'createWizardNav',
     value: function createWizardNav() {
-      var _this7 = this;
+      var _this8 = this;
 
       this.wizardNav = this.ce('wizardNav', 'ul', {
         class: 'list-inline'
@@ -438,69 +451,59 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
 
       if (this.buttons) {
         (0, _each2.default)(this.buttons, function (button) {
-          if (!_this7.hasButton(button.name)) {
+          if (!_this8.hasButton(button.name)) {
             return;
           }
 
-          var buttonWrapper = _this7.ce('wizardNavButton', 'li');
+          var buttonWrapper = _this8.ce('wizardNavButton', 'li');
           var buttonProp = button.name + 'Button';
 
-          _this7[buttonProp] = _this7.ce(buttonProp, 'button', {
+          _this8[buttonProp] = _this8.ce(buttonProp, 'button', {
             class: button.class
           });
 
           if (button.custom) {
-            _this7[buttonProp].appendChild(_this7.text(_this7.t(button.custom)));
+            _this8[buttonProp].appendChild(_this8.text(_this8.t(button.custom)));
           } else {
-            _this7[buttonProp].appendChild(_this7.text(_this7.t(button.name)));
+            _this8[buttonProp].appendChild(_this8.text(_this8.t(button.name)));
           }
 
-          _this7.addEventListener(_this7[buttonProp], 'click', function (event) {
+          _this8.addEventListener(_this8[buttonProp], 'click', function (event) {
             event.preventDefault();
-            _this7[button.method]();
+            _this8[button.method]();
           });
 
-          buttonWrapper.appendChild(_this7[buttonProp]);
+          buttonWrapper.appendChild(_this8[buttonProp]);
 
-          _this7.wizardNav.appendChild(buttonWrapper);
+          _this8.wizardNav.appendChild(buttonWrapper);
         });
       } else {
         (0, _each2.default)([{ name: 'cancel', method: 'cancel', class: 'btn btn-default' }, { name: 'previous', method: 'prevPage', class: 'btn btn-primary' }, { name: 'next', method: 'nextPage', class: 'btn btn-primary' }, { name: 'submit', method: 'submit', class: 'btn btn-primary' }], function (button) {
-          if (!_this7.hasButton(button.name)) {
+          if (!_this8.hasButton(button.name)) {
             return;
           }
 
-          var buttonWrapper = _this7.ce('wizardNavButton', 'li');
+          var buttonWrapper = _this8.ce('wizardNavButton', 'li');
           var buttonProp = button.name + 'Button';
 
-          _this7[buttonProp] = _this7.ce(buttonProp, 'button', {
+          _this8[buttonProp] = _this8.ce(buttonProp, 'button', {
             class: button.class
           });
 
-          _this7[buttonProp].appendChild(_this7.text(_this7.t(button.name)));
+          _this8[buttonProp].appendChild(_this8.text(_this8.t(button.name)));
 
-          _this7.addEventListener(_this7[buttonProp], 'click', function (event) {
+          _this8.addEventListener(_this8[buttonProp], 'click', function (event) {
             event.preventDefault();
-            _this7[button.method]();
+            _this8[button.method]();
           });
 
-          buttonWrapper.appendChild(_this7[buttonProp]);
-          _this7.wizardNav.appendChild(buttonWrapper);
+          buttonWrapper.appendChild(_this8[buttonProp]);
+          _this8.wizardNav.appendChild(buttonWrapper);
         });
       }
 
       // Add the wizard navigation
       this.element.appendChild(this.wizardNav);
-    }
-  }, {
-    key: 'getComponents',
-    value: function getComponents() {
-      // Set the components based on all components.
-      var components = [];
-      (0, _each2.default)(this.allComponents, function (comps) {
-        components = components.concat(comps);
-      });
-      return components;
     }
   }]);
 

@@ -2,9 +2,9 @@
 import Promise from "native-promise-only";
 import FormioForm from './formio.form';
 import Formio from './formio';
+import FormioUtils from './utils';
 import each from 'lodash/each';
 import clone from 'lodash/clone';
-import jsonLogic from 'json-logic-js';
 export class FormioWizard extends FormioForm {
   constructor(element, options) {
     super(element, options);
@@ -14,10 +14,6 @@ export class FormioWizard extends FormioForm {
     this.allComponents = {};
     this._nextPage = 1;
     this.buttons = [];
-
-    // DMS
-
-    this.wizardNav = false;
   }
 
   setPage(num) {
@@ -43,7 +39,9 @@ export class FormioWizard extends FormioForm {
         // Allow for script execution.
         if (typeof form.nextPage === 'string') {
           try {
-            eval(form.nextPage.toString());
+            let next = page;
+            eval('(function(data) {' + form.nextPage.toString() + '})(data)');
+            page = next;
             if (!isNaN(parseInt(page, 10)) && isFinite(page)) {
               return page;
             }
@@ -61,7 +59,7 @@ export class FormioWizard extends FormioForm {
         }
         // Or use JSON Logic.
         else {
-          let result = jsonLogic.apply(form.nextPage, {
+          let result = FormioUtils.jsonLogic.apply(form.nextPage, {
             data: data,
             page: page,
             form: form
@@ -106,11 +104,10 @@ export class FormioWizard extends FormioForm {
     // Validate the form builed, before go to the next page
     if (this.checkValidity(this.submission.data, true)) {
       // DMS
-
+      this.checkData(this.submission.data, true);
       if (this.beforeNextPageCallback) {
           this.beforeNextPageCallback(this, this.submission.data, this.nextPageWithValidation);
       } else {
-          this.checkData(this.submission.data, true);
           return this.beforeNext().then(() => {
               this.history.push(this.page);
               return this.setPage(this.getNextPage(this.submission.data, this.page)).then(() => {
@@ -233,14 +230,7 @@ export class FormioWizard extends FormioForm {
   setForm(form) {
     this.pages = [];
     this.buttons = [];
-
-    // DMS
-
-    this.wizardNav = false;
-
-    if (form.enableNavigation) {
-      this.wizardNav = true;
-    }
+    this.wizard = form;
 
     each(form.components, (component) => {
       if (component.type === 'panel') {
@@ -274,11 +264,6 @@ export class FormioWizard extends FormioForm {
   }
 
   createWizardHeader() {
-    // DMS
-
-    if (!this.wizardNav) {
-      return;
-    }
 
     let currentPage = this.currentPage();
     currentPage.breadcrumb = currentPage.breadcrumb || 'default';
@@ -324,6 +309,34 @@ export class FormioWizard extends FormioForm {
 
   onSubmissionChange(changed) {
     super.onSubmissionChange(changed);
+
+    // Only rebuild if there is a page change.
+    let pageIndex = 0;
+    let rebuild = false;
+    each(this.wizard.components, (component) => {
+      if (component.type !== 'panel') {
+        return;
+      }
+
+      if (FormioUtils.hasCondition(component)) {
+        let hasPage = this.pages && this.pages[pageIndex] && (this.pageId(this.pages[pageIndex]) === this.pageId(component));
+        let shouldShow = FormioUtils.checkCondition(component, this.data, this.data);
+        if ((shouldShow && !hasPage) || (!shouldShow && hasPage)) {
+          rebuild = true;
+          return false;
+        }
+        if (shouldShow) {
+          pageIndex++;
+        }
+      }
+      else {
+        pageIndex++;
+      }
+    });
+
+    if (rebuild) {
+      this.setForm(this.wizard);
+    }
 
     // Update Wizard Nav
     let nextPage = this.getNextPage(this.submission.data, this.page);
@@ -425,15 +438,6 @@ export class FormioWizard extends FormioForm {
 
     // Add the wizard navigation
     this.element.appendChild(this.wizardNav);
-  }
-
-  getComponents() {
-    // Set the components based on all components.
-    let components = [];
-    each(this.allComponents, (comps) => {
-      components = components.concat(comps);
-    });
-    return components;
   }
 }
 

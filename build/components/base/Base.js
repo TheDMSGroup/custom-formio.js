@@ -196,7 +196,7 @@ var BaseComponent = function () {
      * Used to trigger a new change in this component.
      * @type {function} - Call to trigger a change in this component.
      */
-    this.triggerChange = (0, _debounce3.default)(this.onChange.bind(this), 200);
+    this.triggerChange = (0, _debounce3.default)(this.onChange.bind(this), 100);
 
     /**
      * An array of event handlers so that the destry command can deregister them.
@@ -235,9 +235,25 @@ var BaseComponent = function () {
   _createClass(BaseComponent, [{
     key: 't',
     value: function t(text, params) {
-      var message = _i18next2.default.t(text, params);
-      return message;
+      params = params || {};
+      params.component = this.component;
+      params.nsSeparator = '::';
+      params.keySeparator = '.|.';
+      params.pluralSeparator = '._.';
+      params.contextSeparator = '._.';
+      return _i18next2.default.t(text, params);
     }
+
+    /**
+     * Sets the language for this form.
+     *
+     * @param lang
+     * @return {*}
+     */
+
+  }, {
+    key: 'on',
+
 
     /**
      * Register for a new event within this component.
@@ -257,9 +273,6 @@ var BaseComponent = function () {
      * @param {function} cb - The callback handler to handle this event.
      * @param {boolean} internal - This is an internal event handler.
      */
-
-  }, {
-    key: 'on',
     value: function on(event, cb, internal) {
       if (!this.events) {
         return;
@@ -555,14 +568,26 @@ var BaseComponent = function () {
      */
 
   }, {
-    key: 'removeButton',
+    key: 'errorMessage',
 
+
+    /**
+     * Get the error message provided a certain type of error.
+     * @param type
+     * @return {*}
+     */
+    value: function errorMessage(type) {
+      return this.component.errors && this.component.errors[type] ? this.component.errors[type] : type;
+    }
 
     /**
      * Creates a new "remove" row button and returns the html element of that button.
      * @param {number} index - The index of the row that should be removed.
      * @returns {HTMLElement} - The html element of the remove button.
      */
+
+  }, {
+    key: 'removeButton',
     value: function removeButton(index) {
       var _this4 = this;
 
@@ -930,14 +955,23 @@ var BaseComponent = function () {
 
   }, {
     key: 'addInputError',
-    value: function addInputError(message) {
+    value: function addInputError(message, dirty) {
+      if (!message) {
+        return;
+      }
+
       if (this.errorElement) {
         var errorMessage = this.ce('errorMessage', 'p', {
           class: 'help-block'
         });
         errorMessage.appendChild(this.text(message));
         this.errorElement.appendChild(errorMessage);
-        this.addClass(this.element, 'has-error');
+      }
+
+      // Add error classes
+      this.addClass(this.element, 'has-error');
+      if (dirty && this.options.highlightErrors) {
+        this.addClass(this.element, 'alert alert-danger');
       }
     }
 
@@ -1138,24 +1172,78 @@ var BaseComponent = function () {
         }
       }
     }
+
+    /**
+      * Get FormioForm element at the root of this component tree.
+      *
+      */
+
+  }, {
+    key: 'getRoot',
+    value: function getRoot() {
+      return this.root;
+    }
+
+    /**
+     * Returns the invalid message, or empty string if the component is valid.
+     *
+     * @param data
+     * @param dirty
+     * @return {*}
+     */
+
+  }, {
+    key: 'invalidMessage',
+    value: function invalidMessage(data, dirty) {
+      // No need to check for errors if there is no input or if it is pristine.
+      if (!this.component.input || !dirty && this.pristine) {
+        return '';
+      }
+
+      return _Validator.Validator.check(this, data);
+    }
+
+    /**
+     * Returns if the component is valid or not.
+     *
+     * @param data
+     * @param dirty
+     * @return {boolean}
+     */
+
+  }, {
+    key: 'isValid',
+    value: function isValid(data, dirty) {
+      return !this.invalidMessage(data, dirty);
+    }
   }, {
     key: 'checkValidity',
     value: function checkValidity(data, dirty) {
-      // No need to check for errors if there is no input or if it is pristine.
-      if (!this.component.input || !dirty && this.pristine) {
-        return true;
-      }
-
-      var message = _Validator.Validator.check(this.validators, this.component, this.getRawValue(), data || this.data, this.data, this.t.bind(this));
-      this.setCustomValidity(message);
-
-      // No message, returns true
+      var message = this.invalidMessage(data, dirty);
+      this.setCustomValidity(message, dirty);
       return message ? false : true;
     }
   }, {
     key: 'getRawValue',
     value: function getRawValue() {
       return this.data[this.component.key];
+    }
+  }, {
+    key: 'isEmpty',
+    value: function isEmpty(value) {
+      return value == null || value.length === 0;
+    }
+
+    /**
+     * Check if a component is eligible for multiple validation
+     *
+     * @return {boolean}
+     */
+
+  }, {
+    key: 'validateMultiple',
+    value: function validateMultiple(value) {
+      return this.component.multiple && (0, _isArray3.default)(value);
     }
   }, {
     key: 'interpolate',
@@ -1329,6 +1417,21 @@ var BaseComponent = function () {
       };
     }
   }, {
+    key: 'language',
+    set: function set(lang) {
+      var _this10 = this;
+
+      return new _nativePromiseOnly2.default(function (resolve, reject) {
+        _i18next2.default.changeLanguage(lang, function (err) {
+          if (err) {
+            return reject(err);
+          }
+          _this10.redraw();
+          resolve();
+        });
+      });
+    }
+  }, {
     key: 'className',
     get: function get() {
       var className = this.component.input ? 'form-group has-feedback ' : '';
@@ -1382,6 +1485,17 @@ var BaseComponent = function () {
     key: 'name',
     get: function get() {
       return this.component.label || this.component.placeholder || this.component.key;
+    }
+
+    /**
+     * Returns the error label for this component.
+     * @return {*}
+     */
+
+  }, {
+    key: 'errorLabel',
+    get: function get() {
+      return this.t(this.component.errorLabel || this.component.label || this.component.placeholder || this.component.key);
     }
   }, {
     key: 'visible',

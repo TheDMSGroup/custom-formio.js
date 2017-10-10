@@ -518,13 +518,13 @@ var _has2 = require('lodash/has');
 
 var _has3 = _interopRequireDefault(_has2);
 
-var _isArray2 = require('lodash/isArray');
+var _isNumber2 = require('lodash/isNumber');
 
-var _isArray3 = _interopRequireDefault(_isArray2);
+var _isNumber3 = _interopRequireDefault(_isNumber2);
 
-var _jsonLogicJs = require('json-logic-js');
+var _index = require('../utils/index');
 
-var _jsonLogicJs2 = _interopRequireDefault(_jsonLogicJs);
+var _index2 = _interopRequireDefault(_index);
 
 function _interopRequireDefault(obj) {
   return obj && obj.__esModule ? obj : { default: obj };
@@ -534,54 +534,46 @@ var Validator = exports.Validator = {
   get: _get3.default,
   each: _each3.default,
   has: _has3.default,
-  boolValue: function boolValue(value) {
-    if (typeof value === 'boolean') {
-      return value;
-    } else if (typeof value === 'string') {
-      return value.toLowerCase() === 'true';
-    } else {
-      return !!value;
+  checkValidator: function checkValidator(component, validator, setting, value, data) {
+    // Make sure this component isn't conditionally disabled.
+    if (!_index2.default.checkCondition(component.component, data, component.data)) {
+      return '';
     }
-  },
-  empty: function empty(value) {
-    return value == null || value.length === 0;
-  },
-  name: function name(component) {
-    return component.label || component.placeholder || component.key;
-  },
-  checkValidator: function checkValidator(validator, component, setting, value, data, row, t) {
-    var result = validator.check.call(this, component, setting, value, data, row);
+
+    var result = validator.check.call(this, component, setting, value, data);
     if (typeof result === 'string') {
       return result;
     }
     if (!result) {
-      return validator.message.call(this, component, setting, t);
+      return validator.message.call(this, component, setting);
     }
     return '';
   },
-  validate: function validate(validator, component, value, data, row, t) {
-    if (validator.key && (0, _has3.default)(component, validator.key)) {
-      var setting = this.get(component, validator.key);
-      return this.checkValidator(validator, component, setting, value, data, row, t);
+  validate: function validate(component, validator, value, data) {
+    if (validator.key && (0, _has3.default)(component.component, validator.key)) {
+      var setting = this.get(component.component, validator.key);
+      return this.checkValidator(component, validator, setting, value, data);
     }
-    return this.checkValidator(validator, component, null, value, data, row, t);
+    return this.checkValidator(component, validator, null, value, data);
   },
-  check: function check(validators, component, value, data, row, t) {
+  check: function check(component, data) {
     var _this = this;
 
     var result = '';
-    (0, _each3.default)(validators, function (name) {
+    var value = component.getRawValue();
+    data = data || component.data;
+    (0, _each3.default)(component.validators, function (name) {
       if (_this.validators.hasOwnProperty(name)) {
         var validator = _this.validators[name];
-        if (component.multiple && (0, _isArray3.default)(value)) {
+        if (component.validateMultiple(value)) {
           (0, _each3.default)(value, function (val) {
-            result = _this.validate(validator, component, val, data, row, t);
+            result = _this.validate(component, validator, val, data);
             if (result) {
               return false;
             }
           });
         } else {
-          result = _this.validate(validator, component, value, data, row, t);
+          result = _this.validate(component, validator, value, data);
         }
         if (result) {
           return false;
@@ -593,22 +585,53 @@ var Validator = exports.Validator = {
   validators: {
     required: {
       key: 'validate.required',
-      message: function message(component, setting, t) {
-        return t('required', { field: this.name(component) });
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('required'), { field: component.errorLabel });
       },
       check: function check(component, setting, value) {
-        var required = Validator.boolValue(setting);
-        if (!required) {
+        if (!_index2.default.boolValue(setting)) {
           return true;
         }
-        return !Validator.empty(value);
+        return !component.isEmpty(value);
+      }
+    },
+    min: {
+      key: 'validate.min',
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('min'), {
+          field: component.errorLabel,
+          min: parseFloat(setting)
+        });
+      },
+      check: function check(component, setting, value) {
+        var min = parseFloat(setting);
+        if (!min || !(0, _isNumber3.default)(value)) {
+          return true;
+        }
+        return parseFloat(value) >= min;
+      }
+    },
+    max: {
+      key: 'validate.max',
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('max'), {
+          field: component.errorLabel,
+          max: parseFloat(setting)
+        });
+      },
+      check: function check(component, setting, value) {
+        var max = parseFloat(setting);
+        if (!max || !(0, _isNumber3.default)(value)) {
+          return true;
+        }
+        return parseFloat(value) <= max;
       }
     },
     minLength: {
       key: 'validate.minLength',
-      message: function message(component, setting, t) {
-        return t('minLength', {
-          field: this.name(component),
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('minLength'), {
+          field: component.errorLabel,
           length: setting - 1
         });
       },
@@ -622,9 +645,9 @@ var Validator = exports.Validator = {
     },
     maxLength: {
       key: 'validate.maxLength',
-      message: function message(component, setting, t) {
-        return t('maxLength', {
-          field: this.name(component),
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('maxLength'), {
+          field: component.errorLabel,
           length: setting + 1
         });
       },
@@ -637,21 +660,23 @@ var Validator = exports.Validator = {
       }
     },
     email: {
-      message: function message(component, setting, t) {
-        return t('invalid_email', {
-          field: this.name(component)
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('invalid_email'), {
+          field: component.errorLabel
         });
       },
       check: function check(component, setting, value) {
         // From http://stackoverflow.com/questions/46155/validate-email-address-in-javascript
         var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        return re.test(value);
+
+        // Allow emails to be valid if the component is pristine and no value is provided.
+        return component.pristine && !value || re.test(value);
       }
     },
     date: {
-      message: function message(component, setting, t) {
-        return t('invalid_date', {
-          field: this.name(component)
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('invalid_date'), {
+          field: component.errorLabel
         });
       },
       check: function check(component, setting, value) {
@@ -660,9 +685,10 @@ var Validator = exports.Validator = {
     },
     pattern: {
       key: 'validate.pattern',
-      message: function message(component, setting, t) {
-        return t('pattern', {
-          field: this.name(component)
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('pattern'), {
+          field: component.errorLabel,
+          pattern: setting
         });
       },
       check: function check(component, setting, value) {
@@ -677,15 +703,15 @@ var Validator = exports.Validator = {
     },
     json: {
       key: 'validate.json',
-      check: function check(component, setting, value, data, row) {
+      check: function check(component, setting, value, data) {
         if (!setting) {
           return true;
         }
         var valid = true;
         try {
-          valid = _jsonLogicJs2.default.apply(setting, {
+          valid = _index2.default.jsonLogic.apply(setting, {
             data: data,
-            row: row
+            row: component.data
           });
         } catch (err) {
           valid = err.message;
@@ -695,16 +721,17 @@ var Validator = exports.Validator = {
     },
     custom: {
       key: 'validate.custom',
-      message: function message(component, setting, t) {
-        return t('custom', {
-          field: this.name(component)
+      message: function message(component) {
+        return component.t(component.errorMessage('custom'), {
+          field: component.errorLabel
         });
       },
-      check: function check(component, setting, value, data, row) {
+      check: function check(component, setting, value, data) {
         if (!setting) {
           return true;
         }
         var valid = true;
+        var row = component.data;
         var custom = setting;
         /*eslint-disable no-unused-vars */
         var input = value;
@@ -728,7 +755,7 @@ var Validator = exports.Validator = {
   }
 };
 
-},{"json-logic-js":69,"lodash/each":248,"lodash/get":252,"lodash/has":253,"lodash/isArray":257}],3:[function(require,module,exports){
+},{"../utils/index":49,"lodash/each":248,"lodash/get":252,"lodash/has":253,"lodash/isNumber":266}],3:[function(require,module,exports){
 'use strict';
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
@@ -1565,7 +1592,7 @@ var BaseComponent = function () {
      * Used to trigger a new change in this component.
      * @type {function} - Call to trigger a change in this component.
      */
-    this.triggerChange = (0, _debounce3.default)(this.onChange.bind(this), 200);
+    this.triggerChange = (0, _debounce3.default)(this.onChange.bind(this), 100);
 
     /**
      * An array of event handlers so that the destry command can deregister them.
@@ -1603,9 +1630,24 @@ var BaseComponent = function () {
   _createClass(BaseComponent, [{
     key: 't',
     value: function t(text, params) {
-      var message = _i18next2.default.t(text, params);
-      return message;
+      params = params || {};
+      params.component = this.component;
+      params.nsSeparator = '::';
+      params.keySeparator = '.|.';
+      params.pluralSeparator = '._.';
+      params.contextSeparator = '._.';
+      return _i18next2.default.t(text, params);
     }
+
+    /**
+     * Sets the language for this form.
+     *
+     * @param lang
+     * @return {*}
+     */
+
+  }, {
+    key: 'on',
 
     /**
      * Register for a new event within this component.
@@ -1625,9 +1667,6 @@ var BaseComponent = function () {
      * @param {function} cb - The callback handler to handle this event.
      * @param {boolean} internal - This is an internal event handler.
      */
-
-  }, {
-    key: 'on',
     value: function on(event, cb, internal) {
       if (!this.events) {
         return;
@@ -1921,13 +1960,25 @@ var BaseComponent = function () {
      */
 
   }, {
-    key: 'removeButton',
+    key: 'errorMessage',
+
+    /**
+     * Get the error message provided a certain type of error.
+     * @param type
+     * @return {*}
+     */
+    value: function errorMessage(type) {
+      return this.component.errors && this.component.errors[type] ? this.component.errors[type] : type;
+    }
 
     /**
      * Creates a new "remove" row button and returns the html element of that button.
      * @param {number} index - The index of the row that should be removed.
      * @returns {HTMLElement} - The html element of the remove button.
      */
+
+  }, {
+    key: 'removeButton',
     value: function removeButton(index) {
       var _this4 = this;
 
@@ -2295,14 +2346,23 @@ var BaseComponent = function () {
 
   }, {
     key: 'addInputError',
-    value: function addInputError(message) {
+    value: function addInputError(message, dirty) {
+      if (!message) {
+        return;
+      }
+
       if (this.errorElement) {
         var errorMessage = this.ce('errorMessage', 'p', {
           class: 'help-block'
         });
         errorMessage.appendChild(this.text(message));
         this.errorElement.appendChild(errorMessage);
-        this.addClass(this.element, 'has-error');
+      }
+
+      // Add error classes
+      this.addClass(this.element, 'has-error');
+      if (dirty && this.options.highlightErrors) {
+        this.addClass(this.element, 'alert alert-danger');
       }
     }
 
@@ -2503,24 +2563,78 @@ var BaseComponent = function () {
         }
       }
     }
+
+    /**
+      * Get FormioForm element at the root of this component tree.
+      *
+      */
+
+  }, {
+    key: 'getRoot',
+    value: function getRoot() {
+      return this.root;
+    }
+
+    /**
+     * Returns the invalid message, or empty string if the component is valid.
+     *
+     * @param data
+     * @param dirty
+     * @return {*}
+     */
+
+  }, {
+    key: 'invalidMessage',
+    value: function invalidMessage(data, dirty) {
+      // No need to check for errors if there is no input or if it is pristine.
+      if (!this.component.input || !dirty && this.pristine) {
+        return '';
+      }
+
+      return _Validator.Validator.check(this, data);
+    }
+
+    /**
+     * Returns if the component is valid or not.
+     *
+     * @param data
+     * @param dirty
+     * @return {boolean}
+     */
+
+  }, {
+    key: 'isValid',
+    value: function isValid(data, dirty) {
+      return !this.invalidMessage(data, dirty);
+    }
   }, {
     key: 'checkValidity',
     value: function checkValidity(data, dirty) {
-      // No need to check for errors if there is no input or if it is pristine.
-      if (!this.component.input || !dirty && this.pristine) {
-        return true;
-      }
-
-      var message = _Validator.Validator.check(this.validators, this.component, this.getRawValue(), data || this.data, this.data, this.t.bind(this));
-      this.setCustomValidity(message);
-
-      // No message, returns true
+      var message = this.invalidMessage(data, dirty);
+      this.setCustomValidity(message, dirty);
       return message ? false : true;
     }
   }, {
     key: 'getRawValue',
     value: function getRawValue() {
       return this.data[this.component.key];
+    }
+  }, {
+    key: 'isEmpty',
+    value: function isEmpty(value) {
+      return value == null || value.length === 0;
+    }
+
+    /**
+     * Check if a component is eligible for multiple validation
+     *
+     * @return {boolean}
+     */
+
+  }, {
+    key: 'validateMultiple',
+    value: function validateMultiple(value) {
+      return this.component.multiple && (0, _isArray3.default)(value);
     }
   }, {
     key: 'interpolate',
@@ -2694,6 +2808,21 @@ var BaseComponent = function () {
       };
     }
   }, {
+    key: 'language',
+    set: function set(lang) {
+      var _this10 = this;
+
+      return new _nativePromiseOnly2.default(function (resolve, reject) {
+        _i18next2.default.changeLanguage(lang, function (err) {
+          if (err) {
+            return reject(err);
+          }
+          _this10.redraw();
+          resolve();
+        });
+      });
+    }
+  }, {
     key: 'className',
     get: function get() {
       var className = this.component.input ? 'form-group has-feedback ' : '';
@@ -2747,6 +2876,17 @@ var BaseComponent = function () {
     key: 'name',
     get: function get() {
       return this.component.label || this.component.placeholder || this.component.key;
+    }
+
+    /**
+     * Returns the error label for this component.
+     * @return {*}
+     */
+
+  }, {
+    key: 'errorLabel',
+    get: function get() {
+      return this.t(this.component.errorLabel || this.component.label || this.component.placeholder || this.component.key);
     }
   }, {
     key: 'visible',
@@ -6309,7 +6449,7 @@ var SelectComponent = exports.SelectComponent = function (_BaseComponent) {
     // Trigger an update.
     var _this = _possibleConstructorReturn(this, (SelectComponent.__proto__ || Object.getPrototypeOf(SelectComponent)).call(this, component, options, data));
 
-    _this.triggerUpdate = (0, _debounce3.default)(_this.updateItems.bind(_this), 200);
+    _this.triggerUpdate = (0, _debounce3.default)(_this.updateItems.bind(_this), 100);
 
     // If they wish to refresh on a value, then add that here.
     if (_this.component.refreshOn) {

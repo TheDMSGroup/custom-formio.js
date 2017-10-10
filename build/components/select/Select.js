@@ -60,7 +60,7 @@ var SelectComponent = exports.SelectComponent = function (_BaseComponent) {
     // Trigger an update.
     var _this = _possibleConstructorReturn(this, (SelectComponent.__proto__ || Object.getPrototypeOf(SelectComponent)).call(this, component, options, data));
 
-    _this.triggerUpdate = (0, _debounce3.default)(_this.updateItems.bind(_this), 200);
+    _this.triggerUpdate = (0, _debounce3.default)(_this.updateItems.bind(_this), 100);
 
     // If they wish to refresh on a value, then add that here.
     if (_this.component.refreshOn) {

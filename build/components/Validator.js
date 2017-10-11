@@ -17,13 +17,13 @@ var _has2 = require('lodash/has');
 
 var _has3 = _interopRequireDefault(_has2);
 
-var _isArray2 = require('lodash/isArray');
+var _isNumber2 = require('lodash/isNumber');
 
-var _isArray3 = _interopRequireDefault(_isArray2);
+var _isNumber3 = _interopRequireDefault(_isNumber2);
 
-var _jsonLogicJs = require('json-logic-js');
+var _index = require('../utils/index');
 
-var _jsonLogicJs2 = _interopRequireDefault(_jsonLogicJs);
+var _index2 = _interopRequireDefault(_index);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -31,54 +31,46 @@ var Validator = exports.Validator = {
   get: _get3.default,
   each: _each3.default,
   has: _has3.default,
-  boolValue: function boolValue(value) {
-    if (typeof value === 'boolean') {
-      return value;
-    } else if (typeof value === 'string') {
-      return value.toLowerCase() === 'true';
-    } else {
-      return !!value;
+  checkValidator: function checkValidator(component, validator, setting, value, data) {
+    // Make sure this component isn't conditionally disabled.
+    if (!_index2.default.checkCondition(component.component, data, component.data)) {
+      return '';
     }
-  },
-  empty: function empty(value) {
-    return value == null || value.length === 0;
-  },
-  name: function name(component) {
-    return component.label || component.placeholder || component.key;
-  },
-  checkValidator: function checkValidator(validator, component, setting, value, data, row, t) {
-    var result = validator.check.call(this, component, setting, value, data, row);
+
+    var result = validator.check.call(this, component, setting, value, data);
     if (typeof result === 'string') {
       return result;
     }
     if (!result) {
-      return validator.message.call(this, component, setting, t);
+      return validator.message.call(this, component, setting);
     }
     return '';
   },
-  validate: function validate(validator, component, value, data, row, t) {
-    if (validator.key && (0, _has3.default)(component, validator.key)) {
-      var setting = this.get(component, validator.key);
-      return this.checkValidator(validator, component, setting, value, data, row, t);
+  validate: function validate(component, validator, value, data) {
+    if (validator.key && (0, _has3.default)(component.component, validator.key)) {
+      var setting = this.get(component.component, validator.key);
+      return this.checkValidator(component, validator, setting, value, data);
     }
-    return this.checkValidator(validator, component, null, value, data, row, t);
+    return this.checkValidator(component, validator, null, value, data);
   },
-  check: function check(validators, component, value, data, row, t) {
+  check: function check(component, data) {
     var _this = this;
 
     var result = '';
-    (0, _each3.default)(validators, function (name) {
+    var value = component.getRawValue();
+    data = data || component.data;
+    (0, _each3.default)(component.validators, function (name) {
       if (_this.validators.hasOwnProperty(name)) {
         var validator = _this.validators[name];
-        if (component.multiple && (0, _isArray3.default)(value)) {
+        if (component.validateMultiple(value)) {
           (0, _each3.default)(value, function (val) {
-            result = _this.validate(validator, component, val, data, row, t);
+            result = _this.validate(component, validator, val, data);
             if (result) {
               return false;
             }
           });
         } else {
-          result = _this.validate(validator, component, value, data, row, t);
+          result = _this.validate(component, validator, value, data);
         }
         if (result) {
           return false;
@@ -90,22 +82,53 @@ var Validator = exports.Validator = {
   validators: {
     required: {
       key: 'validate.required',
-      message: function message(component, setting, t) {
-        return t('required', { field: this.name(component) });
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('required'), { field: component.errorLabel });
       },
       check: function check(component, setting, value) {
-        var required = Validator.boolValue(setting);
-        if (!required) {
+        if (!_index2.default.boolValue(setting)) {
           return true;
         }
-        return !Validator.empty(value);
+        return !component.isEmpty(value);
+      }
+    },
+    min: {
+      key: 'validate.min',
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('min'), {
+          field: component.errorLabel,
+          min: parseFloat(setting)
+        });
+      },
+      check: function check(component, setting, value) {
+        var min = parseFloat(setting);
+        if (!min || !(0, _isNumber3.default)(value)) {
+          return true;
+        }
+        return parseFloat(value) >= min;
+      }
+    },
+    max: {
+      key: 'validate.max',
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('max'), {
+          field: component.errorLabel,
+          max: parseFloat(setting)
+        });
+      },
+      check: function check(component, setting, value) {
+        var max = parseFloat(setting);
+        if (!max || !(0, _isNumber3.default)(value)) {
+          return true;
+        }
+        return parseFloat(value) <= max;
       }
     },
     minLength: {
       key: 'validate.minLength',
-      message: function message(component, setting, t) {
-        return t('minLength', {
-          field: this.name(component),
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('minLength'), {
+          field: component.errorLabel,
           length: setting - 1
         });
       },
@@ -119,9 +142,9 @@ var Validator = exports.Validator = {
     },
     maxLength: {
       key: 'validate.maxLength',
-      message: function message(component, setting, t) {
-        return t('maxLength', {
-          field: this.name(component),
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('maxLength'), {
+          field: component.errorLabel,
           length: setting + 1
         });
       },
@@ -134,21 +157,23 @@ var Validator = exports.Validator = {
       }
     },
     email: {
-      message: function message(component, setting, t) {
-        return t('invalid_email', {
-          field: this.name(component)
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('invalid_email'), {
+          field: component.errorLabel
         });
       },
       check: function check(component, setting, value) {
         // From http://stackoverflow.com/questions/46155/validate-email-address-in-javascript
         var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-        return re.test(value);
+
+        // Allow emails to be valid if the component is pristine and no value is provided.
+        return component.pristine && !value || re.test(value);
       }
     },
     date: {
-      message: function message(component, setting, t) {
-        return t('invalid_date', {
-          field: this.name(component)
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('invalid_date'), {
+          field: component.errorLabel
         });
       },
       check: function check(component, setting, value) {
@@ -157,9 +182,10 @@ var Validator = exports.Validator = {
     },
     pattern: {
       key: 'validate.pattern',
-      message: function message(component, setting, t) {
-        return t('pattern', {
-          field: this.name(component)
+      message: function message(component, setting) {
+        return component.t(component.errorMessage('pattern'), {
+          field: component.errorLabel,
+          pattern: setting
         });
       },
       check: function check(component, setting, value) {
@@ -174,15 +200,15 @@ var Validator = exports.Validator = {
     },
     json: {
       key: 'validate.json',
-      check: function check(component, setting, value, data, row) {
+      check: function check(component, setting, value, data) {
         if (!setting) {
           return true;
         }
         var valid = true;
         try {
-          valid = _jsonLogicJs2.default.apply(setting, {
+          valid = _index2.default.jsonLogic.apply(setting, {
             data: data,
-            row: row
+            row: component.data
           });
         } catch (err) {
           valid = err.message;
@@ -192,16 +218,17 @@ var Validator = exports.Validator = {
     },
     custom: {
       key: 'validate.custom',
-      message: function message(component, setting, t) {
-        return t('custom', {
-          field: this.name(component)
+      message: function message(component) {
+        return component.t(component.errorMessage('custom'), {
+          field: component.errorLabel
         });
       },
-      check: function check(component, setting, value, data, row) {
+      check: function check(component, setting, value, data) {
         if (!setting) {
           return true;
         }
         var valid = true;
+        var row = component.data;
         var custom = setting;
         /*eslint-disable no-unused-vars */
         var input = value;

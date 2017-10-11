@@ -147,7 +147,7 @@ export class BaseComponent {
      * Used to trigger a new change in this component.
      * @type {function} - Call to trigger a change in this component.
      */
-    this.triggerChange = _debounce(this.onChange.bind(this), 200);
+    this.triggerChange = _debounce(this.onChange.bind(this), 100);
 
     /**
      * An array of event handlers so that the destry command can deregister them.
@@ -182,8 +182,31 @@ export class BaseComponent {
    * @param {Object} params - The i18n parameters to use for translation.
    */
   t(text, params) {
-    let message = i18next.t(text, params);
-    return message;
+    params = params || {};
+    params.component = this.component;
+    params.nsSeparator = '::';
+    params.keySeparator = '.|.';
+    params.pluralSeparator = '._.';
+    params.contextSeparator = '._.';
+    return i18next.t(text, params);
+  }
+
+  /**
+   * Sets the language for this form.
+   *
+   * @param lang
+   * @return {*}
+   */
+  set language(lang) {
+    return new Promise((resolve, reject) => {
+      i18next.changeLanguage(lang, (err) => {
+        if (err) {
+          return reject(err);
+        }
+        this.redraw();
+        resolve();
+      });
+    });
   }
 
   /**
@@ -503,6 +526,24 @@ export class BaseComponent {
   get name() {
     return this.component.label || this.component.placeholder || this.component.key;
   }
+
+  /**
+   * Returns the error label for this component.
+   * @return {*}
+   */
+  get errorLabel() {
+    return this.t(this.component.errorLabel || this.component.label || this.component.placeholder || this.component.key);
+  }
+
+  /**
+   * Get the error message provided a certain type of error.
+   * @param type
+   * @return {*}
+   */
+  errorMessage(type) {
+    return (this.component.errors && this.component.errors[type]) ? this.component.errors[type] :  type;
+  }
+
 
   /**
    * Creates a new "remove" row button and returns the html element of that button.
@@ -826,14 +867,23 @@ export class BaseComponent {
    * Add a new input error to this element.
    * @param message
    */
-  addInputError(message) {
+  addInputError(message, dirty) {
+    if (!message) {
+      return;
+    }
+
     if (this.errorElement) {
       let errorMessage = this.ce('errorMessage', 'p', {
         class: 'help-block'
       });
       errorMessage.appendChild(this.text(message));
       this.errorElement.appendChild(errorMessage);
-      this.addClass(this.element, 'has-error');
+    }
+
+    // Add error classes
+    this.addClass(this.element, 'has-error');
+    if (dirty && this.options.highlightErrors) {
+      this.addClass(this.element, 'alert alert-danger');
     }
   }
 
@@ -1019,28 +1069,62 @@ export class BaseComponent {
     }
   }
 
-  checkValidity(data, dirty) {
+ /**
+   * Get FormioForm element at the root of this component tree.
+   *
+   */
+  getRoot() {
+    return this.root;
+  }
+
+  /**
+   * Returns the invalid message, or empty string if the component is valid.
+   *
+   * @param data
+   * @param dirty
+   * @return {*}
+   */
+  invalidMessage(data, dirty) {
     // No need to check for errors if there is no input or if it is pristine.
     if (!this.component.input || (!dirty && this.pristine)) {
-      return true;
+      return '';
     }
 
-    let message = Validator.check(
-      this.validators,
-      this.component,
-      this.getRawValue(),
-      data || this.data,
-      this.data,
-      this.t.bind(this)
-    );
-    this.setCustomValidity(message);
+    return Validator.check(this, data);
+  }
 
-    // No message, returns true
+  /**
+   * Returns if the component is valid or not.
+   *
+   * @param data
+   * @param dirty
+   * @return {boolean}
+   */
+  isValid(data, dirty) {
+    return !this.invalidMessage(data, dirty);
+  }
+
+  checkValidity(data, dirty) {
+    let message = this.invalidMessage(data, dirty);
+    this.setCustomValidity(message, dirty);
     return message ? false : true;
   }
 
   getRawValue() {
     return this.data[this.component.key];
+  }
+
+  isEmpty(value) {
+    return value == null || value.length === 0;
+  }
+
+  /**
+   * Check if a component is eligible for multiple validation
+   *
+   * @return {boolean}
+   */
+  validateMultiple(value) {
+    return this.component.multiple && _isArray(value);
   }
 
   get errors() {

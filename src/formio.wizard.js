@@ -348,6 +348,21 @@ export class FormioWizard extends FormioForm {
     }
   }
 
+  pageId(page) {
+    if (page.key) {
+      return page.key;
+    }
+    else if (
+      page.components &&
+      page.components.length > 0
+    ) {
+      return this.pageId(page.components[0]);
+    }
+    else {
+      return page.title;
+    }
+  }
+
   createWizardNav() {
     this.wizardNav = this.ce('wizardNav', 'ul', {
       class: 'list-inline'

@@ -10282,6 +10282,17 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
       }
     }
   }, {
+    key: 'pageId',
+    value: function pageId(page) {
+      if (page.key) {
+        return page.key;
+      } else if (page.components && page.components.length > 0) {
+        return this.pageId(page.components[0]);
+      } else {
+        return page.title;
+      }
+    }
+  }, {
     key: 'createWizardNav',
     value: function createWizardNav() {
       var _this8 = this;

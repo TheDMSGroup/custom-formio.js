@@ -269,8 +269,6 @@ var SelectComponent = exports.SelectComponent = function (_BaseComponent) {
   }, {
     key: 'setValue',
     value: function setValue(value, noUpdate, noValidate) {
-      var _this4 = this;
-
       this.value = value;
       if (this.choices) {
         if (value && this.choices.store) {
@@ -288,15 +286,13 @@ var SelectComponent = exports.SelectComponent = function (_BaseComponent) {
 
           // If it is not found, then add it.
           if (!foundChoice) {
-            this.choices._addChoice(false, false, value, value);
+            this.choices._addChoice(this.itemValue(value), this.itemTemplate(value));
           }
         }
 
         // Now set the value.
         if (value) {
-          setTimeout(function () {
-            return _this4.choices.setValueByChoice((0, _isArray3.default)(value) ? value : [value]);
-          }, 10);
+          this.choices.setValueByChoice((0, _isArray3.default)(value) ? value : [value]);
         } else {
           this.choices.removeActiveItems();
         }

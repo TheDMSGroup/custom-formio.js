@@ -235,13 +235,13 @@ export class SelectComponent extends BaseComponent {
 
         // If it is not found, then add it.
         if (!foundChoice) {
-          this.choices._addChoice(false, false, value, value);
+          this.choices._addChoice(this.itemValue(value), this.itemTemplate(value));
         }
       }
 
       // Now set the value.
       if (value) {
-        setTimeout(() => this.choices.setValueByChoice(_isArray(value) ? value : [value]), 10);
+        this.choices.setValueByChoice(_isArray(value) ? value : [value])
       }
       else {
         this.choices.removeActiveItems();

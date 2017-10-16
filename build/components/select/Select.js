@@ -45,6 +45,8 @@ var _isArray3 = _interopRequireDefault(_isArray2);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -66,9 +68,9 @@ var SelectComponent = exports.SelectComponent = function (_BaseComponent) {
     if (_this.component.refreshOn) {
       _this.on('change', function (event) {
         if (_this.component.refreshOn === 'data') {
-          _this.updateItems();
-        } else if (event.changed.component.key === _this.component.refreshOn) {
-          _this.updateItems();
+          _this.refreshItems();
+        } else if (event.changed && event.changed.component.key === _this.component.refreshOn) {
+          _this.refreshItems();
         }
       });
     }
@@ -233,26 +235,53 @@ var SelectComponent = exports.SelectComponent = function (_BaseComponent) {
   }, {
     key: 'addInput',
     value: function addInput(input, container) {
+      var _ref,
+          _this4 = this;
+
       _get2(SelectComponent.prototype.__proto__ || Object.getPrototypeOf(SelectComponent.prototype), 'addInput', this).call(this, input, container, true);
       if (this.component.multiple) {
         input.setAttribute('multiple', true);
       }
-      this.choices = new _choices2.default(input, {
-        placeholder: !!this.component.placeholder,
-        placeholderValue: this.component.placeholder,
+      var tabIndex = input.tabIndex;
+      this.choices = new _choices2.default(input, (_ref = {
         removeItemButton: true,
+        itemSelectText: '',
 
         // DMS
         searchEnabled: false,
-        removeItems: false,
+        removeItems: false
 
-        itemSelectText: '',
-        classNames: {
-          containerOuter: 'choices form-group formio-choices',
-          containerInner: 'form-control'
-        },
-        shouldSort: false
-      });
+      }, _defineProperty(_ref, 'itemSelectText', ''), _defineProperty(_ref, 'classNames', {
+        containerOuter: 'choices form-group formio-choices',
+        containerInner: 'form-control'
+      }), _defineProperty(_ref, 'shouldSort', false), _defineProperty(_ref, 'position', this.component.dropdown || 'auto'), _ref));
+      this.choices.itemList.tabIndex = tabIndex;
+      // If a search field is provided, then add an event listener to update items on search.
+      if (this.component.searchField) {
+        input.addEventListener('search', function (event) {
+          return _this4.triggerUpdate(event.detail.value);
+        });
+      }
+
+      // Create a pseudo-placeholder.
+      if (this.component.placeholder && !this.choices.placeholderElement) {
+        this.placeholder = this.ce2('span', {
+          class: 'formio-placeholder'
+        }, [this.text(this.component.placeholder)]);
+
+        // Prepend the placeholder.
+        this.choices.containerInner.insertBefore(this.placeholder, this.choices.containerInner.firstChild);
+        input.addEventListener('addItem', function () {
+          _this4.placeholder.style.display = 'none';
+        }, false);
+        input.addEventListener('removeItem', function () {
+          var value = _this4.getValue();
+          if (!value || !value.length) {
+            _this4.placeholder.style.display = 'unset';
+          }
+        }, false);
+      }
+
       if (this.disabled) {
         this.choices.disable();
       }

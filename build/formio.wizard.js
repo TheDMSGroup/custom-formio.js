@@ -373,11 +373,11 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
       this.element.appendChild(this.wizardHeader);
     }
   }, {
-    key: 'onSubmissionChange',
-    value: function onSubmissionChange(changed) {
+    key: 'onChange',
+    value: function onChange(changed) {
       var _this7 = this;
 
-      _get(FormioWizard.prototype.__proto__ || Object.getPrototypeOf(FormioWizard.prototype), 'onSubmissionChange', this).call(this, changed);
+      _get(FormioWizard.prototype.__proto__ || Object.getPrototypeOf(FormioWizard.prototype), 'onChange', this).call(this, changed);
 
       // Only rebuild if there is a page change.
       var pageIndex = 0;

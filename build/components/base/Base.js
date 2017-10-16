@@ -843,6 +843,58 @@ var BaseComponent = function () {
     }
 
     /**
+    * Append different types of children.
+    *
+    * @param child
+    */
+
+  }, {
+    key: 'appendChild',
+    value: function appendChild(element, child) {
+      var _this6 = this;
+
+      if (Array.isArray(child)) {
+        child.forEach(function (oneChild) {
+          _this6.appendChild(element, oneChild);
+        });
+      } else if (child instanceof HTMLElement || child instanceof Text) {
+        element.appendChild(child);
+      } else if (child) {
+        element.appendChild(this.text(child.toString()));
+      }
+    }
+
+    /**
+     * Alias for document.createElement.
+     *
+     * @param {string} type - The type of element to create
+     * @param {Object} attr - The element attributes to add to the created element.
+     * @param {Various} children - Child elements. Can be a DOM Element, string or array of both.
+     * @param {Object} events
+     *
+     * @return {HTMLElement} - The created element.
+     */
+
+  }, {
+    key: 'ce2',
+    value: function ce2(type, attr) {
+      var children = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+      var events = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+
+      // Create the element.
+      var element = document.createElement(type);
+
+      // Add attributes.
+      if (attr) {
+        this.attr(element, attr);
+      }
+
+      // Append the children.
+      this.appendChild(element, children);
+      return element;
+    }
+
+    /**
      * Alias for document.createElement.
      *
      * @param {string} name - The name of the element to create, for templating purposes.
@@ -1025,14 +1077,14 @@ var BaseComponent = function () {
   }, {
     key: 'addInputSubmitListener',
     value: function addInputSubmitListener(input) {
-      var _this6 = this;
+      var _this7 = this;
 
       this.addEventListener(input, 'keypress', function (event) {
         var key = event.keyCode || event.which;
         if (key == 13) {
           event.preventDefault();
           event.stopPropagation();
-          _this6.emit('submitButton');
+          _this7.emit('submitButton');
         }
       });
     }
@@ -1046,10 +1098,10 @@ var BaseComponent = function () {
   }, {
     key: 'addInputEventListener',
     value: function addInputEventListener(input) {
-      var _this7 = this;
+      var _this8 = this;
 
       this.addEventListener(input, this.info.changeEvent, function () {
-        return _this7.updateValue();
+        return _this8.updateValue();
       });
     }
 
@@ -1323,7 +1375,7 @@ var BaseComponent = function () {
   }, {
     key: 'selectOptions',
     value: function selectOptions(select, tag, options, defaultValue) {
-      var _this8 = this;
+      var _this9 = this;
 
       (0, _each3.default)(options, function (option) {
         var attrs = {
@@ -1332,8 +1384,8 @@ var BaseComponent = function () {
         if (defaultValue !== undefined && option.value === defaultValue) {
           attrs.selected = 'selected';
         }
-        var optionElement = _this8.ce(tag, 'option', attrs);
-        optionElement.appendChild(_this8.text(option.label));
+        var optionElement = _this9.ce(tag, 'option', attrs);
+        optionElement.appendChild(_this9.text(option.label));
         select.appendChild(optionElement);
       });
     }
@@ -1393,7 +1445,7 @@ var BaseComponent = function () {
   }, {
     key: 'elementInfo',
     value: function elementInfo() {
-      var _this9 = this;
+      var _this10 = this;
 
       var attributes = {
         name: this.options.name,
@@ -1404,7 +1456,7 @@ var BaseComponent = function () {
         tabindex: 'tabindex',
         placeholder: 'placeholder'
       }, function (path, prop) {
-        var attrValue = (0, _get3.default)(_this9.component, path);
+        var attrValue = (0, _get3.default)(_this10.component, path);
         if (attrValue) {
           attributes[prop] = attrValue;
         }
@@ -1419,14 +1471,14 @@ var BaseComponent = function () {
   }, {
     key: 'language',
     set: function set(lang) {
-      var _this10 = this;
+      var _this11 = this;
 
       return new _nativePromiseOnly2.default(function (resolve, reject) {
         _i18next2.default.changeLanguage(lang, function (err) {
           if (err) {
             return reject(err);
           }
-          _this10.redraw();
+          _this11.redraw();
           resolve();
         });
       });

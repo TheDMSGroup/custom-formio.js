@@ -2234,6 +2234,58 @@ var BaseComponent = function () {
     }
 
     /**
+    * Append different types of children.
+    *
+    * @param child
+    */
+
+  }, {
+    key: 'appendChild',
+    value: function appendChild(element, child) {
+      var _this6 = this;
+
+      if (Array.isArray(child)) {
+        child.forEach(function (oneChild) {
+          _this6.appendChild(element, oneChild);
+        });
+      } else if (child instanceof HTMLElement || child instanceof Text) {
+        element.appendChild(child);
+      } else if (child) {
+        element.appendChild(this.text(child.toString()));
+      }
+    }
+
+    /**
+     * Alias for document.createElement.
+     *
+     * @param {string} type - The type of element to create
+     * @param {Object} attr - The element attributes to add to the created element.
+     * @param {Various} children - Child elements. Can be a DOM Element, string or array of both.
+     * @param {Object} events
+     *
+     * @return {HTMLElement} - The created element.
+     */
+
+  }, {
+    key: 'ce2',
+    value: function ce2(type, attr) {
+      var children = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+      var events = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+
+      // Create the element.
+      var element = document.createElement(type);
+
+      // Add attributes.
+      if (attr) {
+        this.attr(element, attr);
+      }
+
+      // Append the children.
+      this.appendChild(element, children);
+      return element;
+    }
+
+    /**
      * Alias for document.createElement.
      *
      * @param {string} name - The name of the element to create, for templating purposes.
@@ -2416,14 +2468,14 @@ var BaseComponent = function () {
   }, {
     key: 'addInputSubmitListener',
     value: function addInputSubmitListener(input) {
-      var _this6 = this;
+      var _this7 = this;
 
       this.addEventListener(input, 'keypress', function (event) {
         var key = event.keyCode || event.which;
         if (key == 13) {
           event.preventDefault();
           event.stopPropagation();
-          _this6.emit('submitButton');
+          _this7.emit('submitButton');
         }
       });
     }
@@ -2437,10 +2489,10 @@ var BaseComponent = function () {
   }, {
     key: 'addInputEventListener',
     value: function addInputEventListener(input) {
-      var _this7 = this;
+      var _this8 = this;
 
       this.addEventListener(input, this.info.changeEvent, function () {
-        return _this7.updateValue();
+        return _this8.updateValue();
       });
     }
 
@@ -2714,7 +2766,7 @@ var BaseComponent = function () {
   }, {
     key: 'selectOptions',
     value: function selectOptions(select, tag, options, defaultValue) {
-      var _this8 = this;
+      var _this9 = this;
 
       (0, _each3.default)(options, function (option) {
         var attrs = {
@@ -2723,8 +2775,8 @@ var BaseComponent = function () {
         if (defaultValue !== undefined && option.value === defaultValue) {
           attrs.selected = 'selected';
         }
-        var optionElement = _this8.ce(tag, 'option', attrs);
-        optionElement.appendChild(_this8.text(option.label));
+        var optionElement = _this9.ce(tag, 'option', attrs);
+        optionElement.appendChild(_this9.text(option.label));
         select.appendChild(optionElement);
       });
     }
@@ -2784,7 +2836,7 @@ var BaseComponent = function () {
   }, {
     key: 'elementInfo',
     value: function elementInfo() {
-      var _this9 = this;
+      var _this10 = this;
 
       var attributes = {
         name: this.options.name,
@@ -2795,7 +2847,7 @@ var BaseComponent = function () {
         tabindex: 'tabindex',
         placeholder: 'placeholder'
       }, function (path, prop) {
-        var attrValue = (0, _get3.default)(_this9.component, path);
+        var attrValue = (0, _get3.default)(_this10.component, path);
         if (attrValue) {
           attributes[prop] = attrValue;
         }
@@ -2810,14 +2862,14 @@ var BaseComponent = function () {
   }, {
     key: 'language',
     set: function set(lang) {
-      var _this10 = this;
+      var _this11 = this;
 
       return new _nativePromiseOnly2.default(function (resolve, reject) {
         _i18next2.default.changeLanguage(lang, function (err) {
           if (err) {
             return reject(err);
           }
-          _this10.redraw();
+          _this11.redraw();
           resolve();
         });
       });
@@ -6422,6 +6474,14 @@ function _interopRequireDefault(obj) {
   return obj && obj.__esModule ? obj : { default: obj };
 }
 
+function _defineProperty(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true });
+  } else {
+    obj[key] = value;
+  }return obj;
+}
+
 function _classCallCheck(instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
@@ -6455,9 +6515,9 @@ var SelectComponent = exports.SelectComponent = function (_BaseComponent) {
     if (_this.component.refreshOn) {
       _this.on('change', function (event) {
         if (_this.component.refreshOn === 'data') {
-          _this.updateItems();
-        } else if (event.changed.component.key === _this.component.refreshOn) {
-          _this.updateItems();
+          _this.refreshItems();
+        } else if (event.changed && event.changed.component.key === _this.component.refreshOn) {
+          _this.refreshItems();
         }
       });
     }
@@ -6622,26 +6682,53 @@ var SelectComponent = exports.SelectComponent = function (_BaseComponent) {
   }, {
     key: 'addInput',
     value: function addInput(input, container) {
+      var _ref,
+          _this4 = this;
+
       _get2(SelectComponent.prototype.__proto__ || Object.getPrototypeOf(SelectComponent.prototype), 'addInput', this).call(this, input, container, true);
       if (this.component.multiple) {
         input.setAttribute('multiple', true);
       }
-      this.choices = new _choices2.default(input, {
-        placeholder: !!this.component.placeholder,
-        placeholderValue: this.component.placeholder,
+      var tabIndex = input.tabIndex;
+      this.choices = new _choices2.default(input, (_ref = {
         removeItemButton: true,
+        itemSelectText: '',
 
         // DMS
         searchEnabled: false,
-        removeItems: false,
+        removeItems: false
 
-        itemSelectText: '',
-        classNames: {
-          containerOuter: 'choices form-group formio-choices',
-          containerInner: 'form-control'
-        },
-        shouldSort: false
-      });
+      }, _defineProperty(_ref, 'itemSelectText', ''), _defineProperty(_ref, 'classNames', {
+        containerOuter: 'choices form-group formio-choices',
+        containerInner: 'form-control'
+      }), _defineProperty(_ref, 'shouldSort', false), _defineProperty(_ref, 'position', this.component.dropdown || 'auto'), _ref));
+      this.choices.itemList.tabIndex = tabIndex;
+      // If a search field is provided, then add an event listener to update items on search.
+      if (this.component.searchField) {
+        input.addEventListener('search', function (event) {
+          return _this4.triggerUpdate(event.detail.value);
+        });
+      }
+
+      // Create a pseudo-placeholder.
+      if (this.component.placeholder && !this.choices.placeholderElement) {
+        this.placeholder = this.ce2('span', {
+          class: 'formio-placeholder'
+        }, [this.text(this.component.placeholder)]);
+
+        // Prepend the placeholder.
+        this.choices.containerInner.insertBefore(this.placeholder, this.choices.containerInner.firstChild);
+        input.addEventListener('addItem', function () {
+          _this4.placeholder.style.display = 'none';
+        }, false);
+        input.addEventListener('removeItem', function () {
+          var value = _this4.getValue();
+          if (!value || !value.length) {
+            _this4.placeholder.style.display = 'unset';
+          }
+        }, false);
+      }
+
       if (this.disabled) {
         this.choices.disable();
       }
@@ -10166,11 +10253,11 @@ var FormioWizard = exports.FormioWizard = function (_FormioForm) {
       this.element.appendChild(this.wizardHeader);
     }
   }, {
-    key: 'onSubmissionChange',
-    value: function onSubmissionChange(changed) {
+    key: 'onChange',
+    value: function onChange(changed) {
       var _this7 = this;
 
-      _get(FormioWizard.prototype.__proto__ || Object.getPrototypeOf(FormioWizard.prototype), 'onSubmissionChange', this).call(this, changed);
+      _get(FormioWizard.prototype.__proto__ || Object.getPrototypeOf(FormioWizard.prototype), 'onChange', this).call(this, changed);
 
       // Only rebuild if there is a page change.
       var pageIndex = 0;

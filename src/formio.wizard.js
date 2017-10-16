@@ -307,8 +307,8 @@ export class FormioWizard extends FormioForm {
     this.element.appendChild(this.wizardHeader);
   }
 
-  onSubmissionChange(changed) {
-    super.onSubmissionChange(changed);
+  onChange(changed) {
+    super.onChange(changed);
 
     // Only rebuild if there is a page change.
     let pageIndex = 0;

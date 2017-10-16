@@ -767,6 +767,49 @@ export class BaseComponent {
     });
   }
 
+    /**
+   * Append different types of children.
+   *
+   * @param child
+   */
+  appendChild(element, child) {
+    if (Array.isArray(child)) {
+      child.forEach(oneChild => {
+        this.appendChild(element, oneChild);
+      });
+    }
+    else if (child instanceof HTMLElement || child instanceof Text) {
+      element.appendChild(child);
+    }
+    else if (child) {
+      element.appendChild(this.text(child.toString()));
+    }
+  }
+
+  /**
+   * Alias for document.createElement.
+   *
+   * @param {string} type - The type of element to create
+   * @param {Object} attr - The element attributes to add to the created element.
+   * @param {Various} children - Child elements. Can be a DOM Element, string or array of both.
+   * @param {Object} events
+   *
+   * @return {HTMLElement} - The created element.
+   */
+  ce2(type, attr, children = null, events = {}) {
+    // Create the element.
+    let element = document.createElement(type);
+
+    // Add attributes.
+    if (attr) {
+      this.attr(element, attr);
+    }
+
+    // Append the children.
+    this.appendChild(element, children);
+    return element;
+  }
+
   /**
    * Alias for document.createElement.
    *

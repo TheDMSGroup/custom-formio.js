@@ -17,10 +17,10 @@ export class SelectComponent extends BaseComponent {
     if (this.component.refreshOn) {
       this.on('change', (event) => {
         if (this.component.refreshOn === 'data') {
-          this.updateItems();
+          this.refreshItems();
         }
-        else if (event.changed.component.key === this.component.refreshOn) {
-          this.updateItems();
+        else if (event.changed && (event.changed.component.key === this.component.refreshOn)) {
+          this.refreshItems();
         }
       });
     }
@@ -175,10 +175,10 @@ export class SelectComponent extends BaseComponent {
     if (this.component.multiple) {
       input.setAttribute('multiple', true);
     }
+    var tabIndex = input.tabIndex;
     this.choices = new Choices(input, {
-      placeholder: !!this.component.placeholder,
-      placeholderValue: this.component.placeholder,
       removeItemButton: true,
+      itemSelectText: '',
 
       // DMS
       searchEnabled: false,
@@ -189,8 +189,39 @@ export class SelectComponent extends BaseComponent {
         containerOuter: 'choices form-group formio-choices',
         containerInner: 'form-control'
       },
-      shouldSort: false
+      shouldSort: false,
+      position: (this.component.dropdown || 'auto')
     });
+    this.choices.itemList.tabIndex = tabIndex;
+    // If a search field is provided, then add an event listener to update items on search.
+    if (this.component.searchField) {
+      input.addEventListener('search', (event) => this.triggerUpdate(event.detail.value));
+    }
+
+    // Create a pseudo-placeholder.
+    if (
+      this.component.placeholder &&
+      !this.choices.placeholderElement
+    ) {
+      this.placeholder = this.ce2('span', {
+        class: 'formio-placeholder'
+      }, [
+        this.text(this.component.placeholder)
+      ]);
+
+      // Prepend the placeholder.
+      this.choices.containerInner.insertBefore(this.placeholder, this.choices.containerInner.firstChild);
+      input.addEventListener('addItem', () => {
+        this.placeholder.style.display = 'none';
+      }, false);
+      input.addEventListener('removeItem', () => {
+        let value = this.getValue();
+        if (!value || !value.length) {
+          this.placeholder.style.display = 'unset';
+        }
+      }, false);
+    }
+
     if (this.disabled) {
       this.choices.disable();
     }

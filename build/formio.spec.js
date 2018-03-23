@@ -1036,8 +1036,8 @@ describe('Test Formio.js capabilities', function () {
               used: 0,
               limit: 1000,
               remaining: 1000,
-              reset: new Date(Date.now() + 2.628e9).toISOString // ~1 month later
-              () },
+              reset: new Date(Date.now() + 2.628e9).toISOString() // ~1 month later
+            },
             access: [],
             title: body.title,
             name: body.name,

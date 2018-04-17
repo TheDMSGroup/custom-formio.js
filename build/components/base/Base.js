@@ -39,6 +39,14 @@ var _clone2 = require('lodash/clone');
 
 var _clone3 = _interopRequireDefault(_clone2);
 
+var _isUndefined2 = require('lodash/isUndefined');
+
+var _isUndefined3 = _interopRequireDefault(_isUndefined2);
+
+var _isEqual2 = require('lodash/isEqual');
+
+var _isEqual3 = _interopRequireDefault(_isEqual2);
+
 var _i18next = require('i18next');
 
 var _i18next2 = _interopRequireDefault(_i18next);
@@ -863,7 +871,67 @@ var BaseComponent = function () {
         element.appendChild(this.text(child.toString()));
       }
     }
+  }, {
+    key: 'getLabelWidth',
+    value: function getLabelWidth() {
+      if ((0, _isUndefined3.default)(this.component.labelWidth)) {
+        this.component.labelWidth = 30;
+      }
 
+      return this.component.labelWidth;
+    }
+  }, {
+    key: 'getLabelMargin',
+    value: function getLabelMargin() {
+      if ((0, _isUndefined3.default)(this.component.labelMargin)) {
+        this.component.labelMargin = 3;
+      }
+
+      return this.component.labelMargin;
+    }
+  }, {
+    key: 'labelOnTheLeft',
+    value: function labelOnTheLeft(position) {
+      return ['left-left', 'left-right'].includes(position);
+    }
+  }, {
+    key: 'labelOnTheRight',
+    value: function labelOnTheRight(position) {
+      return ['right-left', 'right-right'].includes(position);
+    }
+  }, {
+    key: 'rightAlignedLabel',
+    value: function rightAlignedLabel(position) {
+      return ['left-right', 'right-right'].includes(position);
+    }
+  }, {
+    key: 'labelOnTheLeftOrRight',
+    value: function labelOnTheLeftOrRight(position) {
+      return this.labelOnTheLeft(position) || this.labelOnTheRight(position);
+    }
+  }, {
+    key: 'labelIsHidden',
+    value: function labelIsHidden() {
+      return !this.component.label || this.component.hideLabel || this.options.inputsOnly;
+    }
+  }, {
+    key: 'setInputStyles',
+    value: function setInputStyles(input) {
+      if (this.labelIsHidden()) {
+        return;
+      }
+
+      if (this.labelOnTheLeftOrRight(this.component.labelPosition)) {
+        var totalLabelWidth = this.getLabelWidth() + this.getLabelMargin();
+        input.style.width = 100 - totalLabelWidth + '%';
+
+        if (this.labelOnTheLeft(this.component.labelPosition)) {
+          input.style.marginLeft = totalLabelWidth + '%';
+        } else {
+          input.style.marginRight = totalLabelWidth + '%';
+        }
+      }
+    }
     /**
      * Alias for document.createElement.
      *
@@ -1373,6 +1441,16 @@ var BaseComponent = function () {
      */
 
   }, {
+    key: 'setDisabled',
+    value: function setDisabled(element, disabled) {
+      element.disabled = disabled;
+      if (disabled) {
+        element.setAttribute('disabled', 'disabled');
+      } else {
+        element.removeAttribute('disabled');
+      }
+    }
+  }, {
     key: 'selectOptions',
     value: function selectOptions(select, tag, options, defaultValue) {
       var _this9 = this;
@@ -1406,6 +1484,49 @@ var BaseComponent = function () {
       if (select.onselect) {
         select.onchange();
       }
+    }
+  }, {
+    key: 'getFlags',
+    value: function getFlags() {
+      return typeof arguments[1] === 'boolean' ? {
+        noUpdateEvent: arguments[1],
+        noValidate: arguments[2]
+      } : arguments[1] || {};
+    }
+
+    /**
+     * Determine if the value of this component has changed.
+     *
+     * @param before
+     * @param after
+     * @return {boolean}
+     */
+
+  }, {
+    key: 'hasChanged',
+    value: function hasChanged(before, after) {
+      if ((before === undefined || before === null) && (after === undefined || after === null)) {
+        return false;
+      }
+      return !(0, _isEqual3.default)(before, after);
+    }
+
+    /**
+     * Update the value on change.
+     *
+     * @param flags
+     * @param changed
+     */
+
+  }, {
+    key: 'updateOnChange',
+    value: function updateOnChange(flags, changed) {
+      delete flags.changed;
+      if (!flags.noUpdateEvent && changed) {
+        this.triggerChange(flags);
+        return true;
+      }
+      return false;
     }
   }, {
     key: 'clear',
@@ -1572,11 +1693,18 @@ var BaseComponent = function () {
      */
     ,
     set: function set(disabled) {
+      var _this12 = this;
+
+      // Do not allow a component to be disabled if it should be always...
+      if (!disabled && this.shouldDisable) {
+        return;
+      }
+
       this._disabled = disabled;
-      // Disable all input.
+
+      // Disable all inputs.
       (0, _each3.default)(this.inputs, function (input) {
-        input.disabled = disabled;
-        input.setAttribute('disabled', 'disabled');
+        return _this12.setDisabled(input, disabled);
       });
     }
   }]);

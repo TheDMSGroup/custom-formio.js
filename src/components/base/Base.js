@@ -6,6 +6,8 @@ import _debounce from 'lodash/debounce';
 import _isArray from 'lodash/isArray';
 import _assign from 'lodash/assign';
 import _clone from 'lodash/clone';
+import _isUndefined from 'lodash/isUndefined'
+import _isEqual from 'lodash/isEqual'
 import i18next from 'i18next';
 import jsonLogic from 'json-logic-js';
 import FormioUtils from '../../utils';
@@ -786,6 +788,68 @@ export class BaseComponent {
     }
   }
 
+  getLabelWidth() {
+      if (_isUndefined(this.component.labelWidth)) {
+          this.component.labelWidth = 30;
+      }
+
+      return this.component.labelWidth;
+  }
+
+  getLabelMargin() {
+      if (_isUndefined(this.component.labelMargin)) {
+          this.component.labelMargin = 3;
+      }
+
+      return this.component.labelMargin;
+  }
+
+  labelOnTheLeft(position) {
+      return [
+          'left-left',
+          'left-right'
+      ].includes(position);
+  }
+
+  labelOnTheRight(position) {
+      return [
+          'right-left',
+          'right-right'
+      ].includes(position);
+  }
+
+  rightAlignedLabel(position) {
+      return [
+          'left-right',
+          'right-right'
+      ].includes(position);
+  }
+
+  labelOnTheLeftOrRight(position) {
+      return this.labelOnTheLeft(position) || this.labelOnTheRight(position);
+  }
+
+  labelIsHidden() {
+      return !this.component.label || this.component.hideLabel || this.options.inputsOnly;
+  }
+
+  setInputStyles(input) {
+      if (this.labelIsHidden()) {
+          return;
+      }
+
+      if (this.labelOnTheLeftOrRight(this.component.labelPosition)) {
+          const totalLabelWidth = this.getLabelWidth() + this.getLabelMargin();
+          input.style.width = `${100 - totalLabelWidth}%`;
+
+          if (this.labelOnTheLeft(this.component.labelPosition)) {
+              input.style.marginLeft = `${totalLabelWidth}%`;
+          }
+          else {
+              input.style.marginRight = `${totalLabelWidth}%`;
+          }
+      }
+  }
   /**
    * Alias for document.createElement.
    *
@@ -1251,12 +1315,25 @@ export class BaseComponent {
    * @param {boolean} disabled
    */
   set disabled(disabled) {
-    this._disabled = disabled;
-    // Disable all input.
-    _each(this.inputs, (input) => {
-      input.disabled = disabled;
-      input.setAttribute('disabled', 'disabled');
-    });
+      // Do not allow a component to be disabled if it should be always...
+      if (!disabled && this.shouldDisable) {
+          return;
+      }
+
+      this._disabled = disabled;
+
+      // Disable all inputs.
+      _each(this.inputs, (input) => this.setDisabled(input, disabled));
+  }
+
+  setDisabled(element, disabled) {
+      element.disabled = disabled;
+      if (disabled) {
+          element.setAttribute('disabled', 'disabled');
+      }
+      else {
+          element.removeAttribute('disabled');
+      }
   }
 
   selectOptions(select, tag, options, defaultValue) {
@@ -1291,7 +1368,47 @@ export class BaseComponent {
     }
   }
 
-  clear() {
+  getFlags() {
+      return (typeof arguments[1] === 'boolean') ? {
+          noUpdateEvent: arguments[1],
+          noValidate: arguments[2]
+      } : (arguments[1] || {});
+  }
+
+  /**
+   * Determine if the value of this component has changed.
+   *
+   * @param before
+   * @param after
+   * @return {boolean}
+   */
+  hasChanged(before, after) {
+      if (
+          ((before === undefined) || (before === null)) &&
+          ((after === undefined) || (after === null))
+      ) {
+          return false;
+      }
+      return !_isEqual(before, after);
+  }
+
+  /**
+   * Update the value on change.
+   *
+   * @param flags
+   * @param changed
+   */
+  updateOnChange(flags, changed) {
+      delete flags.changed;
+      if (!flags.noUpdateEvent && changed) {
+          this.triggerChange(flags);
+          return true;
+      }
+      return false;
+  }
+
+
+    clear() {
     this.destroy();
     let element = this.getElement();
     if (element) {

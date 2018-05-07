@@ -1,4 +1,5 @@
-import maskInput from 'text-mask-all/vanilla';
+import maskInput, {conformToMask} from 'vanilla-text-mask';
+import _ from 'lodash';
 import Promise from "native-promise-only";
 import _get from 'lodash/get';
 import _each from 'lodash/each';
@@ -137,19 +138,26 @@ export class BaseComponent {
      */
     this.inputMask = null;
 
+    /**
+     * Points to the root component, usually the FormComponent.
+     *
+     * @type {BaseComponent}
+     */
+    this.root = this;
+
     this.options.name = this.options.name || 'data';
 
     /**
      * The validators that are assigned to this component.
      * @type {[string]}
      */
-    this.validators = ['required', 'minLength', 'maxLength', 'custom', 'pattern', 'json'];
+    this.validators = ['required', 'minLength', 'maxLength', 'custom', 'pattern', 'json', 'mask'];
 
     /**
      * Used to trigger a new change in this component.
      * @type {function} - Call to trigger a change in this component.
      */
-    this.triggerChange = _debounce(this.onChange.bind(this), 100);
+    this.triggerChange = _.debounce(this.onChange.bind(this), 100);
 
     /**
      * An array of event handlers so that the destry command can deregister them.
@@ -209,6 +217,14 @@ export class BaseComponent {
         resolve();
       });
     });
+  }
+
+  get emptyValue() {
+    return null;
+  }
+
+  get hasValue() {
+    return _.has(this.data, this.component.key);
   }
 
   /**
@@ -1337,14 +1353,14 @@ export class BaseComponent {
   }
 
   selectOptions(select, tag, options, defaultValue) {
-    _each(options, (option) => {
-      let attrs = {
+    _.each(options, (option) => {
+      const attrs = {
         value: option.value
       };
       if (defaultValue !== undefined && (option.value === defaultValue)) {
         attrs.selected = 'selected';
       }
-      let optionElement = this.ce(tag, 'option', attrs);
+      const optionElement = this.ce('option', attrs);
       optionElement.appendChild(this.text(option.label));
       select.appendChild(optionElement);
     });
@@ -1383,13 +1399,13 @@ export class BaseComponent {
    * @return {boolean}
    */
   hasChanged(before, after) {
-      if (
-          ((before === undefined) || (before === null)) &&
-          ((after === undefined) || (after === null))
-      ) {
-          return false;
-      }
-      return !_isEqual(before, after);
+    if (
+      ((before === undefined) || (before === null)) &&
+      ((after === undefined) || (after === null))
+    ) {
+      return false;
+    }
+    return !_.isEqual(before, after);
   }
 
   /**

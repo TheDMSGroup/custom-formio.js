@@ -8,38 +8,8 @@ import _clone from 'lodash/clone';
 import _assign from 'lodash/assign';
 import EventEmitter from 'eventemitter2';
 
-/**
- * Taken from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
- *
- * This is needed for PhantomJS.
- */
-if (!Function.prototype.bind) {
-  Function.prototype.bind = function(oThis) {
-    if (typeof this !== 'function') {
-      // closest thing possible to the ECMAScript 5
-      // internal IsCallable function
-      throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
-    }
-
-    var aArgs   = Array.prototype.slice.call(arguments, 1),
-      fToBind = this,
-      fNOP    = function() {},
-      fBound  = function() {
-        return fToBind.apply(this instanceof fNOP
-            ? this
-            : oThis,
-          aArgs.concat(Array.prototype.slice.call(arguments)));
-      };
-
-    if (this.prototype) {
-      // Function.prototype doesn't have a prototype property
-      fNOP.prototype = this.prototype;
-    }
-    fBound.prototype = new fNOP();
-
-    return fBound;
-  };
-}
+// Initialize the available forms.
+Formio.forms = {};
 
 let getOptions = function(options) {
   options = options || {};
@@ -60,7 +30,7 @@ let getOptions = function(options) {
  * let form = new FormioForm(document.getElementById('formio'));
  * form.src = 'https://examples.form.io/example';
  */
-export class FormioForm extends FormioComponents {
+export default class FormioForm extends FormioComponents {
   /**
    * Creates a new FormioForm instance.
    *
@@ -81,6 +51,9 @@ export class FormioForm extends FormioComponents {
    */
   constructor(element, options) {
     super(null, getOptions(options));
+
+    // Keep track of all available forms globally.
+    Formio.forms[this.id] = this;
 
     /**
      * The type of this element.
@@ -430,8 +403,12 @@ export class FormioForm extends FormioComponents {
   setSubmission(submission) {
     return this.onSubmission = this.formReady.then(
       () => {
-        this.setValue(submission);
-        this.submissionReadyResolve();
+        // If nothing changed, still trigger an update.
+        if (!this.setValue(submission, flags)) {
+          this.triggerChange({
+            noValidate: true
+          });
+        }
       },
       (err) => this.submissionReadyReject(err)
     ).catch(
@@ -448,10 +425,17 @@ export class FormioForm extends FormioComponents {
     if (!this._submission.data) {
       this._submission.data = {};
     }
-    this._submission.data = _assign(this.data, super.getValue());
+    const submission = this._submission;
+    submission.data = this.data;
     return this._submission;
   }
 
+  /**
+   * Create a new form.
+   *
+   * @param {Object} form - The form object that is created.
+   * @returns {Promise.<TResult>}
+   */
   /**
    * Create a new form.
    *
@@ -470,15 +454,13 @@ export class FormioForm extends FormioComponents {
     }
     return this.onFormBuild = this.render().then(() => {
       this.formReadyResolve();
-      if (!this.onSubmission) {
-        this.submissionReadyResolve();
-      }
       this.onFormBuild = null;
-    },
-      (err) => this.formReadyReject(err)
-    ).catch(
-      (err) => this.formReadyReject(err)
-    );
+      this.setValue(this.submission);
+      return form;
+    }).catch((err) => {
+      console.warn(err);
+      this.formReadyReject(err);
+    });
   }
 
   /**
@@ -488,13 +470,15 @@ export class FormioForm extends FormioComponents {
   render() {
     return this.onElement.then(() => {
       this.clear();
-      return this.localize().then(() => {
-        this.build();
-        this.on('resetForm', () => this.reset(), true);
-        this.on('componentChange', (changed) => this.triggerSubmissionChange(changed), true);
-        this.on('refreshData', () => this.updateValue());
+      this.build();
+      this.isBuilt = true;
+      this.on('resetForm', () => this.reset(), true);
+      this.on('componentChange', (changed) => this.triggerSubmissionChange(changed), true);
+      this.on('refreshData', () => this.updateValue());
+      setTimeout(() => {
+        this.onChange();
         this.emit('render');
-      });
+      }, 1);
     });
   }
 
@@ -650,24 +634,7 @@ export class FormioForm extends FormioComponents {
   }
 
   executeSubmit() {
-    // DMS
-    var comp = null; 
-    this.everyComponent(function(component) {
-      if (
-        (component.component.type === 'checkbox' || 
-        component.component.type === 'jornaya') &&
-        component.component.validate.required &&
-        !component.getValue()
-      ) {
-        comp = component.component.key;
-      }
-    });
-
-    if (comp) {
-      delete this.submission.data[comp];
-    }
-    
-    let submission = this.submission;
+    const submission = this.submission || {};
     if (
       submission &&
       submission.data &&

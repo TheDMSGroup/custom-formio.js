@@ -1,15 +1,6 @@
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.components = undefined;
-
-var _comp = require('./comp1');
-
-var _comp2 = require('./comp2');
-
-var components = exports.components = {
-  comp1: _comp.component,
-  comp2: _comp2.component
+import { component as comp1 } from './comp1';
+import { component as comp2 } from './comp2';
+export const components = {
+  comp1: comp1,
+  comp2: comp2
 };

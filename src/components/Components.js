@@ -1,8 +1,8 @@
 'use strict';
+import _ from 'lodash';
 import _each from 'lodash/each';
 import _clone from 'lodash/clone';
 import _remove from 'lodash/remove';
-import _assign from 'lodash/assign';
 import Promise from "native-promise-only";
 import { BaseComponent } from './base/Base';
 export class FormioComponents extends BaseComponent {
@@ -311,18 +311,14 @@ export class FormioComponents extends BaseComponent {
 
   setValue(value, noUpdate, noValidate) {
     if (!value) {
-      return;
+      return false;
     }
     this.value = value;
-    _each(this.getComponents(), (component) => {
+    this.getComponents().forEach(component => {
+
       if (component.type === 'button') {
         return;
       }
-
-      //console.dir(component);
-
-      //console.log('setValue' + '.' + 'component.type');
-      //console.log(component.type);
 
       if (component.type === 'components') {
         component.setValue(value, noUpdate, noValidate);
@@ -331,7 +327,7 @@ export class FormioComponents extends BaseComponent {
         if (component.type === 'select') {
           //console.log('component is a select');
         } else {
-          component.setValue(value[component.component.key], noUpdate);
+          component.setValue(_.get(value, component.component.key), noUpdate);
         }
       }
       else if (component.component.input) {

@@ -1,9 +1,7 @@
-'use strict';
-
 var Promise = require("native-promise-only");
-var s3 = function s3(formio) {
+var s3 = function (formio) {
   return {
-    uploadFile: function uploadFile(file, fileName, dir, progressCallback) {
+    uploadFile: function (file, fileName, dir, progressCallback) {
       return new Promise(function (resolve, reject) {
         // Send the pre response to sign the upload.
         var pre = new XMLHttpRequest();
@@ -99,7 +97,7 @@ var s3 = function s3(formio) {
         }));
       });
     },
-    downloadFile: function downloadFile(file) {
+    downloadFile: function (file) {
       if (file.acl !== 'public-read') {
         return formio.makeRequest('file', formio.formUrl + '/storage/s3?bucket=' + file.bucket + '&key=' + file.key, 'GET');
       } else {

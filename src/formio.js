@@ -934,7 +934,7 @@ export class Formio {
 }
 
 // Define all the static properties.
-Formio.baseUrl = 'https://api.form.io';
+Formio.baseUrl = '';
 Formio.projectUrl = Formio.baseUrl;
 Formio.projectUrlSet = false;
 Formio.plugins = [];
@@ -945,4 +945,7 @@ Formio.events = new EventEmitter({
   maxListeners: 0
 });
 
-module.exports = global.Formio = Formio;
+// Include the utils in the basic build.
+Formio.Utils = require('./utils');
+global.Formio = Formio;
+export default Formio;

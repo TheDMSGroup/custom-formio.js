@@ -1,9 +1,7 @@
-'use strict';
-
 var Promise = require("native-promise-only");
-var dropbox = function dropbox(formio) {
+var dropbox = function (formio) {
   return {
-    uploadFile: function uploadFile(file, fileName, dir, progressCallback) {
+    uploadFile: function (file, fileName, dir, progressCallback) {
       return new Promise(function (resolve, reject) {
         // Send the file with data.
         var xhr = new XMLHttpRequest();
@@ -53,7 +51,7 @@ var dropbox = function dropbox(formio) {
         xhr.send(fd);
       });
     },
-    downloadFile: function downloadFile(file) {
+    downloadFile: function (file) {
       var token = false;
       try {
         token = localStorage.getItem('formioToken');

@@ -1,15 +1,25 @@
-import { BaseComponent } from '../base/Base';
+import _ from 'lodash';
+import {BaseComponent} from '../base/Base';
+import FormioUtils from '../../utils';
+
 export class ButtonComponent extends BaseComponent {
   elementInfo() {
-    let info = super.elementInfo();
+    const info = super.elementInfo();
     info.type = 'button';
-    info.attr.type = (this.component.action === 'submit') ? 'submit' : 'button';
-    info.attr.class = 'btn btn-' + this.component.theme;
+    info.attr.type = (['submit', 'saveState'].includes(this.component.action)) ? 'submit' : 'button';
+    this.component.theme = this.component.theme || 'default';
+    if (this.component.size) {
+      info.attr.class += ` btn-${this.component.size}`;
+    }
+    if (this.component.block) {
+      info.attr.class += ' btn-block';
+    }
+    info.attr.class = `btn btn-${this.component.theme}`;
     if (this.component.block) {
       info.attr.class += ' btn-block';
     }
     if (this.component.customClass) {
-      info.attr.class += ' ' + this.component.customClass;
+      info.attr.class += ` ${this.component.customClass}`;
     }
     return info;
   }
@@ -60,9 +70,12 @@ export class ButtonComponent extends BaseComponent {
         case 'submit':
           event.preventDefault();
           event.stopPropagation();
-          this.emit('submitButton');
+          this.emit('submitButton', {
+            state: this.component.state || 'submitted'
+          });
           break;
         case 'event':
+          this.emit(this.component.event, this.data);
           this.events.emit(this.component.event, this.data);
           this.emit('customEvent', {
             type: this.component.event,
@@ -73,6 +86,9 @@ export class ButtonComponent extends BaseComponent {
           break;
         case 'reset':
           this.emit('resetForm');
+          break;
+        case 'delete':
+          this.emit('deleteSubmission');
           break;
         case 'oauth':
           console.log('OAuth currently not supported.');

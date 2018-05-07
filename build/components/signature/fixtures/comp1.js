@@ -1,9 +1,4 @@
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-var component = exports.component = {
+export const component = {
   "lockKey": true,
   "conditional": {
     "eq": "",

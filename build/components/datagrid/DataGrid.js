@@ -1,252 +1,195 @@
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.DataGridComponent = undefined;
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-var _each2 = require('lodash/each');
-
-var _each3 = _interopRequireDefault(_each2);
-
-var _cloneDeep2 = require('lodash/cloneDeep');
-
-var _cloneDeep3 = _interopRequireDefault(_cloneDeep2);
-
-var _clone2 = require('lodash/clone');
-
-var _clone3 = _interopRequireDefault(_clone2);
-
-var _isArray2 = require('lodash/isArray');
-
-var _isArray3 = _interopRequireDefault(_isArray2);
-
-var _Components = require('../Components');
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var DataGridComponent = exports.DataGridComponent = function (_FormioComponents) {
-  _inherits(DataGridComponent, _FormioComponents);
-
-  function DataGridComponent(component, options, data) {
-    _classCallCheck(this, DataGridComponent);
-
-    var _this = _possibleConstructorReturn(this, (DataGridComponent.__proto__ || Object.getPrototypeOf(DataGridComponent)).call(this, component, options, data));
-
-    _this.type = 'datagrid';
-    return _this;
+import _each from 'lodash/each';
+import _cloneDeep from 'lodash/cloneDeep';
+import _clone from 'lodash/clone';
+import _isArray from 'lodash/isArray';
+import { FormioComponents } from '../Components';
+export class DataGridComponent extends FormioComponents {
+  constructor(component, options, data) {
+    super(component, options, data);
+    this.type = 'datagrid';
   }
 
-  _createClass(DataGridComponent, [{
-    key: 'build',
-    value: function build() {
-      this.createElement();
-      this.createLabel(this.element);
-      if (!this.data.hasOwnProperty(this.component.key)) {
-        this.addNewValue();
-      }
-      this.visibleColumns = true;
-      this.buildTable();
+  build() {
+    this.createElement();
+    this.createLabel(this.element);
+    if (!this.data.hasOwnProperty(this.component.key)) {
+      this.addNewValue();
     }
-  }, {
-    key: 'buildTable',
-    value: function buildTable(data) {
-      var _this2 = this;
+    this.visibleColumns = true;
+    this.buildTable();
+  }
 
-      data = data || {};
-      if (this.tableElement) {
-        this.element.removeChild(this.tableElement);
-        this.tableElement.innerHTML = '';
+  buildTable(data) {
+    data = data || {};
+    if (this.tableElement) {
+      this.element.removeChild(this.tableElement);
+      this.tableElement.innerHTML = '';
+    }
+
+    let tableClass = 'table datagrid-table table-bordered form-group formio-data-grid ';
+    _each(['striped', 'bordered', 'hover', 'condensed'], prop => {
+      if (this.component[prop]) {
+        tableClass += 'table-' + prop + ' ';
       }
+    });
+    this.tableElement = this.ce('element', 'table', {
+      class: tableClass
+    });
 
-      var tableClass = 'table datagrid-table table-bordered form-group formio-data-grid ';
-      (0, _each3.default)(['striped', 'bordered', 'hover', 'condensed'], function (prop) {
-        if (_this2.component[prop]) {
-          tableClass += 'table-' + prop + ' ';
+    let thead = this.ce('header', 'thead');
+
+    // Build the header.
+    let tr = this.ce('headerRow', 'tr');
+    _each(this.component.components, comp => {
+      if (this.visibleColumns === true || this.visibleColumns[comp.key]) {
+        let th = this.ce('headerColumn', 'th');
+        if (comp.validate && comp.validate.required) {
+          th.setAttribute('class', 'field-required');
+        }
+        let title = comp.label || comp.title;
+        if (title) {
+          th.appendChild(this.text(title));
+        }
+        tr.appendChild(th);
+      }
+    });
+    let th = this.ce('headerExtra', 'th');
+    tr.appendChild(th);
+    thead.appendChild(tr);
+    this.tableElement.appendChild(thead);
+
+    // Create the table body.
+    this.tbody = this.ce('table', 'tbody');
+
+    // Build the rows.
+    this.buildRows(data);
+
+    // Add the body to the table and to the element.
+    this.tableElement.appendChild(this.tbody);
+    this.element.appendChild(this.tableElement);
+  }
+
+  get defaultValue() {
+    return {};
+  }
+
+  buildRows(data) {
+    let components = require('../index');
+    this.tbody.innerHTML = '';
+    this.rows = [];
+    _each(this.data[this.component.key], (row, index) => {
+      let tr = this.ce('tableRow', 'tr');
+      let cols = {};
+      _each(this.component.components, col => {
+        let column = _cloneDeep(col);
+        column.label = false;
+        column.row = this.row + '-' + index;
+        let options = _clone(this.options);
+        options.name += '[' + index + ']';
+        let comp = components.create(column, options, row);
+        if (row.hasOwnProperty(column.key)) {
+          comp.setValue(row[column.key]);
+        } else if (comp.type === 'components') {
+          comp.setValue(row);
+        }
+        cols[column.key] = comp;
+        if (this.visibleColumns === true || this.visibleColumns[col.key]) {
+          let td = this.ce('tableColumn', 'td');
+          td.appendChild(comp.element);
+          tr.appendChild(td);
+          comp.checkConditions(data);
         }
       });
-      this.tableElement = this.ce('element', 'table', {
-        class: tableClass
-      });
-
-      var thead = this.ce('header', 'thead');
-
-      // Build the header.
-      var tr = this.ce('headerRow', 'tr');
-      (0, _each3.default)(this.component.components, function (comp) {
-        if (_this2.visibleColumns === true || _this2.visibleColumns[comp.key]) {
-          var _th = _this2.ce('headerColumn', 'th');
-          if (comp.validate && comp.validate.required) {
-            _th.setAttribute('class', 'field-required');
-          }
-          var title = comp.label || comp.title;
-          if (title) {
-            _th.appendChild(_this2.text(title));
-          }
-          tr.appendChild(_th);
-        }
-      });
-      var th = this.ce('headerExtra', 'th');
-      tr.appendChild(th);
-      thead.appendChild(tr);
-      this.tableElement.appendChild(thead);
-
-      // Create the table body.
-      this.tbody = this.ce('table', 'tbody');
-
-      // Build the rows.
-      this.buildRows(data);
-
-      // Add the body to the table and to the element.
-      this.tableElement.appendChild(this.tbody);
-      this.element.appendChild(this.tableElement);
-    }
-  }, {
-    key: 'buildRows',
-    value: function buildRows(data) {
-      var _this3 = this;
-
-      var components = require('../index');
-      this.tbody.innerHTML = '';
-      this.rows = [];
-      (0, _each3.default)(this.data[this.component.key], function (row, index) {
-        var tr = _this3.ce('tableRow', 'tr');
-        var cols = {};
-        (0, _each3.default)(_this3.component.components, function (col) {
-          var column = (0, _cloneDeep3.default)(col);
-          column.label = false;
-          column.row = _this3.row + '-' + index;
-          var options = (0, _clone3.default)(_this3.options);
-          options.name += '[' + index + ']';
-          var comp = components.create(column, options, row);
-          if (row.hasOwnProperty(column.key)) {
-            comp.setValue(row[column.key]);
-          } else if (comp.type === 'components') {
-            comp.setValue(row);
-          }
-          cols[column.key] = comp;
-          if (_this3.visibleColumns === true || _this3.visibleColumns[col.key]) {
-            var _td = _this3.ce('tableColumn', 'td');
-            _td.appendChild(comp.element);
-            tr.appendChild(_td);
-            comp.checkConditions(data);
-          }
-        });
-        _this3.rows.push(cols);
-        var td = _this3.ce('tableRemoveRow', 'td');
-        td.appendChild(_this3.removeButton(index));
-        tr.appendChild(td);
-        _this3.tbody.appendChild(tr);
-      });
-
-      // Add the add button.
-      var tr = this.ce('tableAddRow', 'tr');
-      var td = this.ce('tableAddColumn', 'td', {
-        colspan: this.component.components.length + 1
-      });
-      td.appendChild(this.addButton());
+      this.rows.push(cols);
+      let td = this.ce('tableRemoveRow', 'td');
+      td.appendChild(this.removeButton(index));
       tr.appendChild(td);
       this.tbody.appendChild(tr);
+    });
+
+    // Add the add button.
+    let tr = this.ce('tableAddRow', 'tr');
+    let td = this.ce('tableAddColumn', 'td', {
+      colspan: this.component.components.length + 1
+    });
+    td.appendChild(this.addButton());
+    tr.appendChild(td);
+    this.tbody.appendChild(tr);
+  }
+
+  checkConditions(data) {
+    let show = super.checkConditions(data);
+    let rebuild = false;
+    if (this.visibleColumns === true) {
+      this.visibleColumns = {};
     }
-  }, {
-    key: 'checkConditions',
-    value: function checkConditions(data) {
-      var _this4 = this;
-
-      var show = _get(DataGridComponent.prototype.__proto__ || Object.getPrototypeOf(DataGridComponent.prototype), 'checkConditions', this).call(this, data);
-      var rebuild = false;
-      if (this.visibleColumns === true) {
-        this.visibleColumns = {};
-      }
-      (0, _each3.default)(this.component.components, function (col) {
-        var showColumn = false;
-        (0, _each3.default)(_this4.rows, function (comps) {
-          showColumn |= comps[col.key].checkConditions(data);
-        });
-        if (_this4.visibleColumns[col.key] && !showColumn || !_this4.visibleColumns[col.key] && showColumn) {
-          rebuild = true;
-        }
-
-        _this4.visibleColumns[col.key] = showColumn;
-        show |= showColumn;
+    _each(this.component.components, col => {
+      let showColumn = false;
+      _each(this.rows, comps => {
+        showColumn |= comps[col.key].checkConditions(data);
       });
-
-      // If a rebuild is needed, then rebuild the table.
-      if (rebuild && show) {
-        this.buildTable(data);
+      if (this.visibleColumns[col.key] && !showColumn || !this.visibleColumns[col.key] && showColumn) {
+        rebuild = true;
       }
 
-      // Return if this table should show.
-      return show;
+      this.visibleColumns[col.key] = showColumn;
+      show |= showColumn;
+    });
+
+    // If a rebuild is needed, then rebuild the table.
+    if (rebuild && show) {
+      this.buildTable(data);
     }
-  }, {
-    key: 'setValue',
-    value: function setValue(value, noUpdate, noValidate) {
-      if (!value) {
+
+    // Return if this table should show.
+    return show;
+  }
+
+  setValue(value, noUpdate, noValidate) {
+    if (!value) {
+      return;
+    }
+    if (!_isArray(value)) {
+      return;
+    }
+
+    this.value = value;
+
+    // Add needed rows.
+    for (let i = this.rows.length; i < value.length; i++) {
+      this.addValue();
+    }
+
+    _each(this.rows, (row, index) => {
+      if (value.length <= index) {
         return;
       }
-      if (!(0, _isArray3.default)(value)) {
-        return;
-      }
-
-      this.value = value;
-
-      // Add needed rows.
-      for (var i = this.rows.length; i < value.length; i++) {
-        this.addValue();
-      }
-
-      (0, _each3.default)(this.rows, function (row, index) {
-        if (value.length <= index) {
-          return;
+      _each(row, (col, key) => {
+        if (col.type === 'components') {
+          col.setValue(value[index], noUpdate, noValidate);
+        } else if (value[index].hasOwnProperty(key)) {
+          col.setValue(value[index][key], noUpdate, noValidate);
         }
-        (0, _each3.default)(row, function (col, key) {
-          if (col.type === 'components') {
-            col.setValue(value[index], noUpdate, noValidate);
-          } else if (value[index].hasOwnProperty(key)) {
-            col.setValue(value[index][key], noUpdate, noValidate);
-          }
-        });
       });
-    }
+    });
+  }
 
-    /**
-     * Get the value of this component.
-     *
-     * @returns {*}
-     */
-
-  }, {
-    key: 'getValue',
-    value: function getValue() {
-      var values = [];
-      (0, _each3.default)(this.rows, function (row) {
-        var value = {};
-        (0, _each3.default)(row, function (col) {
-          if (col && col.component && col.component.key) {
-            value[col.component.key] = col.getValue();
-          }
-        });
-        values.push(value);
+  /**
+   * Get the value of this component.
+   *
+   * @returns {*}
+   */
+  getValue() {
+    let values = [];
+    _each(this.rows, row => {
+      let value = {};
+      _each(row, col => {
+        if (col && col.component && col.component.key) {
+          value[col.component.key] = col.getValue();
+        }
       });
-      return values;
-    }
-  }, {
-    key: 'defaultValue',
-    get: function get() {
-      return {};
-    }
-  }]);
-
-  return DataGridComponent;
-}(_Components.FormioComponents);
+      values.push(value);
+    });
+    return values;
+  }
+}

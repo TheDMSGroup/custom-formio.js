@@ -34,7 +34,7 @@ import { GmapComponent } from './gmap/Gmap';
 import { JornayaComponent } from './jornaya/Jornaya';
 import { ButtonValueComponent } from './buttonvalue/ButtonValue';
 import { SliderComponent } from './slider/Slider';
-module.exports = {
+const FormioComponentsIndex = {
   address: AddressComponent,
   base: BaseComponent,
   content: ContentComponent,
@@ -86,3 +86,6 @@ module.exports = {
     return comp;
   }
 };
+
+module.exports = FormioComponentsIndex;
+export default FormioComponentsIndex;

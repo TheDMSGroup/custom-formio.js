@@ -1,11 +1,9 @@
-'use strict';
-
 var Promise = require("native-promise-only");
-var url = function url(formio) {
+var url = function (formio) {
   return {
     title: 'Url',
     name: 'url',
-    uploadFile: function uploadFile(file, fileName, dir, progressCallback, url) {
+    uploadFile: function (file, fileName, dir, progressCallback, url) {
       return new Promise(function (resolve, reject) {
         var data = {
           dir: dir,
@@ -66,7 +64,7 @@ var url = function url(formio) {
         xhr.send(fd);
       });
     },
-    downloadFile: function downloadFile(file) {
+    downloadFile: function (file) {
       // Return the original as there is nothing to do.
       return Promise.resolve(file);
     }

@@ -1,86 +1,21 @@
 "use strict";
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.FormioForm = undefined;
+import Promise from "native-promise-only";
+import Formio from './formio';
+import { FormioComponents } from './components/Components';
+import _debounce from 'lodash/debounce';
+import _each from 'lodash/each';
+import _clone from 'lodash/clone';
+import _assign from 'lodash/assign';
+import EventEmitter from 'eventemitter2';
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+// Initialize the available forms.
+Formio.forms = {};
 
-var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-var _nativePromiseOnly = require("native-promise-only");
-
-var _nativePromiseOnly2 = _interopRequireDefault(_nativePromiseOnly);
-
-var _formio = require("./formio");
-
-var _formio2 = _interopRequireDefault(_formio);
-
-var _Components = require("./components/Components");
-
-var _debounce2 = require("lodash/debounce");
-
-var _debounce3 = _interopRequireDefault(_debounce2);
-
-var _each2 = require("lodash/each");
-
-var _each3 = _interopRequireDefault(_each2);
-
-var _clone2 = require("lodash/clone");
-
-var _clone3 = _interopRequireDefault(_clone2);
-
-var _assign2 = require("lodash/assign");
-
-var _assign3 = _interopRequireDefault(_assign2);
-
-var _eventemitter = require("eventemitter2");
-
-var _eventemitter2 = _interopRequireDefault(_eventemitter);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-/**
- * Taken from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function/bind
- *
- * This is needed for PhantomJS.
- */
-if (!Function.prototype.bind) {
-  Function.prototype.bind = function (oThis) {
-    if (typeof this !== 'function') {
-      // closest thing possible to the ECMAScript 5
-      // internal IsCallable function
-      throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
-    }
-
-    var aArgs = Array.prototype.slice.call(arguments, 1),
-        fToBind = this,
-        fNOP = function fNOP() {},
-        fBound = function fBound() {
-      return fToBind.apply(this instanceof fNOP ? this : oThis, aArgs.concat(Array.prototype.slice.call(arguments)));
-    };
-
-    if (this.prototype) {
-      // Function.prototype doesn't have a prototype property
-      fNOP.prototype = this.prototype;
-    }
-    fBound.prototype = new fNOP();
-
-    return fBound;
-  };
-}
-
-var getOptions = function getOptions(options) {
+let getOptions = function (options) {
   options = options || {};
   if (!options.events) {
-    options.events = new _eventemitter2.default({
+    options.events = new EventEmitter({
       wildcard: false,
       maxListeners: 0
     });
@@ -96,10 +31,7 @@ var getOptions = function getOptions(options) {
  * let form = new FormioForm(document.getElementById('formio'));
  * form.src = 'https://examples.form.io/example';
  */
-
-var FormioForm = exports.FormioForm = function (_FormioComponents) {
-  _inherits(FormioForm, _FormioComponents);
-
+export default class FormioForm extends FormioComponents {
   /**
    * Creates a new FormioForm instance.
    *
@@ -118,50 +50,51 @@ var FormioForm = exports.FormioForm = function (_FormioComponents) {
    * form.src = 'https://examples.form.io/example';
    *
    */
-  function FormioForm(element, options) {
-    _classCallCheck(this, FormioForm);
+  constructor(element, options) {
+    super(null, getOptions(options));
+
+    // Keep track of all available forms globally.
+    Formio.forms[this.id] = this;
 
     /**
      * The type of this element.
      * @type {string}
      */
-    var _this = _possibleConstructorReturn(this, (FormioForm.__proto__ || Object.getPrototypeOf(FormioForm)).call(this, null, getOptions(options)));
-
-    _this.type = 'form';
-    _this._src = '';
-    _this._loading = false;
-    _this._submission = {};
-    _this._form = null;
+    this.type = 'form';
+    this._src = '';
+    this._loading = false;
+    this._submission = {};
+    this._form = null;
 
     /**
      * The Formio instance for this form.
      * @type {Formio}
      */
-    _this.formio = null;
+    this.formio = null;
 
     /**
      * The loader HTML element.
      * @type {HTMLElement}
      */
-    _this.loader = null;
+    this.loader = null;
 
     /**
      * The alert HTML element
      * @type {HTMLElement}
      */
-    _this.alert = null;
+    this.alert = null;
 
     /**
      * Promise that is triggered when the submission is done loading.
      * @type {Promise}
      */
-    _this.onSubmission = null;
+    this.onSubmission = null;
 
     /**
      * Promise that is triggered when the form is done building.
      * @type {Promise}
      */
-    _this.onFormBuild = null;
+    this.onFormBuild = null;
 
     /**
      * Promise that executes when the form is ready and rendered.
@@ -174,20 +107,20 @@ var FormioForm = exports.FormioForm = function (_FormioComponents) {
      * });
      * form.src = 'https://examples.form.io/example';
      */
-    _this.formReady = new _nativePromiseOnly2.default(function (resolve, reject) {
+    this.formReady = new Promise((resolve, reject) => {
       /**
        * Called when the formReady state of this form has been resolved.
        *
        * @type {function}
        */
-      _this.formReadyResolve = resolve;
+      this.formReadyResolve = resolve;
 
       /**
        * Called when this form could not load and is rejected.
        *
        * @type {function}
        */
-      _this.formReadyReject = reject;
+      this.formReadyReject = reject;
     });
 
     /**
@@ -201,20 +134,20 @@ var FormioForm = exports.FormioForm = function (_FormioComponents) {
      * });
      * form.src = 'https://examples.form.io/example';
      */
-    _this.submissionReady = new _nativePromiseOnly2.default(function (resolve, reject) {
+    this.submissionReady = new Promise((resolve, reject) => {
       /**
        * Called when the formReady state of this form has been resolved.
        *
        * @type {function}
        */
-      _this.submissionReadyResolve = resolve;
+      this.submissionReadyResolve = resolve;
 
       /**
        * Called when this form could not load and is rejected.
        *
        * @type {function}
        */
-      _this.submissionReadyReject = reject;
+      this.submissionReadyReject = reject;
     });
 
     /**
@@ -222,23 +155,22 @@ var FormioForm = exports.FormioForm = function (_FormioComponents) {
      *
      * @type {function} - Call then when you wish to trigger a submission change.
      */
-    _this.triggerSubmissionChange = (0, _debounce3.default)(_this.onSubmissionChange.bind(_this), 10);
+    this.triggerSubmissionChange = _debounce(this.onSubmissionChange.bind(this), 10);
 
     /**
      * Promise to trigger when the element for this form is established.
      *
      * @type {Promise}
      */
-    _this.onElement = new _nativePromiseOnly2.default(function (resolve) {
+    this.onElement = new Promise(resolve => {
       /**
        * Called when the element has been resolved.
        *
        * @type {function}
        */
-      _this.elementResolve = resolve;
-      _this.setElement(element);
+      this.elementResolve = resolve;
+      this.setElement(element);
     });
-    return _this;
   }
 
   /**
@@ -246,613 +178,476 @@ var FormioForm = exports.FormioForm = function (_FormioComponents) {
    *
    * @param {HTMLElement} element - The element to set as the outside wrapper element for this form.
    */
-
-
-  _createClass(FormioForm, [{
-    key: "setElement",
-    value: function setElement(element) {
-      var _this2 = this;
-
-      if (!element) {
-        return;
-      }
-
-      this.element = element;
-      var classNames = this.element.getAttribute('class');
-      classNames += ' formio-form';
-      this.addClass(this.element, classNames);
-      this.loading = true;
-      this.ready.then(function () {
-        return _this2.loading = false;
-      }, function () {
-        return _this2.loading = false;
-      }).catch(function () {
-        return _this2.loading = false;
-      });
-      this.elementResolve(element);
+  setElement(element) {
+    if (!element) {
+      return;
     }
 
-    /**
-     * Get the embed source of the form.
-     *
-     * @returns {string}
-     */
+    this.element = element;
+    var classNames = this.element.getAttribute('class');
+    classNames += ' formio-form';
+    this.addClass(this.element, classNames);
+    this.loading = true;
+    this.ready.then(() => this.loading = false, () => this.loading = false).catch(() => this.loading = false);
+    this.elementResolve(element);
+  }
 
-  }, {
-    key: "setForm",
+  /**
+   * Get the embed source of the form.
+   *
+   * @returns {string}
+   */
+  get src() {
+    return this._src;
+  }
 
+  /**
+   * Set the Form source, which is typically the Form.io embed URL.
+   *
+   * @param {string} value - The value of the form embed url.
+   *
+   * @example
+   * let form = new FormioForm(document.getElementById('formio'));
+   * form.formReady.then(() => {
+   *   console.log('The form is formReady!');
+   * });
+   * form.src = 'https://examples.form.io/example';
+   */
+  set src(value) {
+    if (!value || typeof value !== 'string') {
+      return;
+    }
+    this._src = value;
+    this.formio = new Formio(value);
 
-    /**
-     * Sets the JSON schema for the form to be rendered.
-     *
-     * @example
-     * let form = new FormioForm(document.getElementById('formio'));
-     * form.setForm({
-     *   components: [
-     *     {
-     *       type: 'textfield',
-     *       key: 'firstName',
-     *       label: 'First Name',
-     *       placeholder: 'Enter your first name.',
-     *       input: true
-     *     },
-     *     {
-     *       type: 'textfield',
-     *       key: 'lastName',
-     *       label: 'Last Name',
-     *       placeholder: 'Enter your last name',
-     *       input: true
-     *     },
-     *     {
-     *       type: 'button',
-     *       action: 'submit',
-     *       label: 'Submit',
-     *       theme: 'primary'
-     *     }
-     *   ]
-     * });
-     *
-     * @param {Object} form - The JSON schema of the form @see https://examples.form.io/example for an example JSON schema.
-     * @returns {*}
-     */
-    value: function setForm(form) {
-      var _this3 = this;
+    if (this.type === 'form') {
+      // Set the options source so this can be passed to other components.
+      this.options.src = value;
+      this.options.formio = this.formio;
+    }
 
-      if (form.display === 'wizard') {
-        console.warn('You need to instantiate the FormioWizard class to use this form as a wizard.');
-      }
+    this.formio.loadForm().then(form => this.setForm(form), err => this.formReadyReject(err)).catch(err => this.formReadyReject(err));
+    if (this.formio.submissionId) {
+      this.onSubmission = this.formio.loadSubmission().then(submission => this.setSubmission(submission), err => this.submissionReadyReject(err)).catch(err => this.submissionReadyReject(err));
+    }
+  }
 
-      if (this.onFormBuild) {
-        return this.onFormBuild.then(function () {
-          return _this3.createForm(form);
-        }, function (err) {
-          return _this3.formReadyReject(err);
-        }).catch(function (err) {
-          return _this3.formReadyReject(err);
+  /**
+   * Called when both the form and submission have been loaded.
+   *
+   * @returns {Promise} - The promise to trigger when both form and submission have loaded.
+   */
+  get ready() {
+    return this.formReady.then(() => this.submissionReady);
+  }
+
+  /**
+   * Returns if this form is loading.
+   *
+   * @returns {boolean} - TRUE means the form is loading, FALSE otherwise.
+   */
+  get loading() {
+    return this._loading;
+  }
+
+  /**
+   * Set the loading state for this form, and also show the loader spinner.
+   *
+   * @param {boolean} loading - If this form should be "loading" or not.
+   */
+  set loading(loading) {
+    if (this._loading !== loading) {
+      this._loading = loading;
+      if (!this.loader && loading) {
+        this.loader = this.ce('loaderWrapper', 'div', {
+          class: 'loader-wrapper'
         });
-      }
-
-      // Set the form object.
-      this._form = form;
-      this.emit('formLoad', form);
-      // Create the form.
-      return this.createForm(form);
-    }
-
-    /**
-     * Gets the form object.
-     *
-     * @returns {Object} - The form JSON schema.
-     */
-
-  }, {
-    key: "setSubmission",
-
-
-    /**
-     * Sets a submission and returns the promise when it is ready.
-     * @param submission
-     * @return {Promise.<TResult>}
-     */
-    value: function setSubmission(submission) {
-      var _this4 = this;
-
-      return this.onSubmission = this.formReady.then(function () {
-        _this4.setValue(submission);
-        _this4.submissionReadyResolve();
-      }, function (err) {
-        return _this4.submissionReadyReject(err);
-      }).catch(function (err) {
-        return _this4.submissionReadyReject(err);
-      });
-    }
-  }, {
-    key: "setValue",
-    value: function setValue(submission, noUpdate, noValidate) {
-      this._submission = submission || { data: {} };
-      return _get(FormioForm.prototype.__proto__ || Object.getPrototypeOf(FormioForm.prototype), "setValue", this).call(this, this._submission.data, noUpdate, noValidate);
-    }
-  }, {
-    key: "getValue",
-    value: function getValue() {
-      if (!this._submission.data) {
-        this._submission.data = {};
-      }
-      this._submission.data = (0, _assign3.default)(this.data, _get(FormioForm.prototype.__proto__ || Object.getPrototypeOf(FormioForm.prototype), "getValue", this).call(this));
-      return this._submission;
-    }
-
-    /**
-     * Create a new form.
-     *
-     * @param {Object} form - The form object that is created.
-     * @returns {Promise.<TResult>}
-     */
-
-  }, {
-    key: "createForm",
-    value: function createForm(form) {
-      var _this5 = this;
-
-      /**
-       * {@link BaseComponent.component}
-       */
-      if (this.component) {
-        this.component.components = form.components;
-      } else {
-        this.component = form;
-      }
-      return this.onFormBuild = this.render().then(function () {
-        _this5.formReadyResolve();
-        if (!_this5.onSubmission) {
-          _this5.submissionReadyResolve();
-        }
-        _this5.onFormBuild = null;
-      }, function (err) {
-        return _this5.formReadyReject(err);
-      }).catch(function (err) {
-        return _this5.formReadyReject(err);
-      });
-    }
-
-    /**
-     * Render the form within the HTML element.
-     * @returns {Promise.<TResult>}
-     */
-
-  }, {
-    key: "render",
-    value: function render() {
-      var _this6 = this;
-
-      return this.onElement.then(function () {
-        _this6.clear();
-        return _this6.localize().then(function () {
-          _this6.build();
-          _this6.on('resetForm', function () {
-            return _this6.reset();
-          }, true);
-          _this6.on('componentChange', function (changed) {
-            return _this6.triggerSubmissionChange(changed);
-          }, true);
-          _this6.on('refreshData', function () {
-            return _this6.updateValue();
-          });
-          _this6.emit('render');
+        let spinner = this.ce('loader', 'div', {
+          class: 'loader text-center'
         });
-      });
-    }
-
-    /**
-     * Sets a new alert to display in the error dialog of the form.
-     *
-     * @param {string} type - The type of alert to display. "danger", "success", "warning", etc.
-     * @param {string} message - The message to show in the alert.
-     */
-
-  }, {
-    key: "setAlert",
-    value: function setAlert(type, message) {
-      if (this.options.noAlerts) {
-        if (!message) {
-          this.emit('error', false);
-        }
-        return;
+        this.loader.appendChild(spinner);
       }
-      if (this.alert) {
+      if (this.loader) {
         try {
-          this.removeChild(this.alert);
-          this.alert = null;
+          if (loading) {
+            this.prepend(this.loader);
+          } else {
+            this.removeChild(this.loader);
+          }
         } catch (err) {}
       }
-      if (message) {
-        this.alert = this.ce('alert-' + type, 'div', {
-          class: 'alert alert-' + type,
-          role: 'alert'
-        });
-        this.alert.innerHTML = message;
-      }
-      if (!this.alert) {
-        return;
-      }
-      this.prepend(this.alert);
+    }
+  }
+
+  /**
+   * Sets the JSON schema for the form to be rendered.
+   *
+   * @example
+   * let form = new FormioForm(document.getElementById('formio'));
+   * form.setForm({
+   *   components: [
+   *     {
+   *       type: 'textfield',
+   *       key: 'firstName',
+   *       label: 'First Name',
+   *       placeholder: 'Enter your first name.',
+   *       input: true
+   *     },
+   *     {
+   *       type: 'textfield',
+   *       key: 'lastName',
+   *       label: 'Last Name',
+   *       placeholder: 'Enter your last name',
+   *       input: true
+   *     },
+   *     {
+   *       type: 'button',
+   *       action: 'submit',
+   *       label: 'Submit',
+   *       theme: 'primary'
+   *     }
+   *   ]
+   * });
+   *
+   * @param {Object} form - The JSON schema of the form @see https://examples.form.io/example for an example JSON schema.
+   * @returns {*}
+   */
+  setForm(form) {
+    if (form.display === 'wizard') {
+      console.warn('You need to instantiate the FormioWizard class to use this form as a wizard.');
     }
 
-    /**
-     * Build the form.
-     */
-
-  }, {
-    key: "build",
-    value: function build() {
-      var _this7 = this;
-
-      this.on('submitButton', function () {
-        return _this7.submit();
-      }, true);
-      this.addComponents();
-      this.checkConditions(this.getValue());
+    if (this.onFormBuild) {
+      return this.onFormBuild.then(() => this.createForm(form), err => this.formReadyReject(err)).catch(err => this.formReadyReject(err));
     }
 
-    /**
-     * Show the errors of this form within the alert dialog.
-     *
-     * @param {Object} error - An optional additional error to display along with the component errors.
-     * @returns {*}
-     */
+    // Set the form object.
+    this._form = form;
+    this.emit('formLoad', form);
+    // Create the form.
+    return this.createForm(form);
+  }
 
-  }, {
-    key: "showErrors",
-    value: function showErrors(error) {
-      this.loading = false;
-      var errors = this.errors;
-      if (error) {
-        errors.push(error);
-      }
-      if (!errors.length) {
-        this.setAlert(false);
-        return;
-      }
-      var message = '<p>' + this.t('error') + '</p><ul>';
-      (0, _each3.default)(errors, function (err) {
-        if (err) {
-          var errorMessage = err.message || err;
-          message += '<li><strong>' + errorMessage + '</strong></li>';
-        }
-      });
-      message += '</ul>';
-      this.setAlert('danger', message);
-      this.emit('error', errors);
-      return errors;
-    }
+  /**
+   * Gets the form object.
+   *
+   * @returns {Object} - The form JSON schema.
+   */
+  get form() {
+    return this._form;
+  }
 
-    /**
-     * Called when the submission has completed, or if the submission needs to be sent to an external library.
-     *
-     * @param {Object} submission - The submission object.
-     * @param {boolean} saved - Whether or not this submission was saved to the server.
-     * @returns {object} - The submission object.
-     */
+  /**
+   * Sets the form value.
+   *
+   * @alias setForm
+   * @param {Object} form - The form schema object.
+   */
+  set form(form) {
+    this.setForm(form);
+  }
 
-  }, {
-    key: "onSubmit",
-    value: function onSubmit(submission, saved) {
-      this.loading = false;
-      this.setValue(submission);
-      this.setAlert('success', '<p>' + this.t('complete') + '</p>');
-      this.emit('submit', submission);
-      if (saved) {
-        this.emit('submitDone', submission);
-      }
-      return submission;
-    }
+  /**
+   * Returns the submission object that was set within this form.
+   *
+   * @returns {Object}
+   */
+  get submission() {
+    return this.getValue();
+  }
 
-    /**
-     * Called when an error occurs during the submission.
-     *
-     * @param {Object} error - The error that occured.
-     */
+  /**
+   * Sets the submission of a form.
+   *
+   * @example
+   * let form = new FormioForm(document.getElementById('formio'));
+   * form.src = 'https://examples.form.io/example';
+   * form.submission = {data: {
+   *   firstName: 'Joe',
+   *   lastName: 'Smith',
+   *   email: 'joe@example.com'
+   * }};
+   *
+   * @param {Object} submission - The Form.io submission object.
+   */
+  set submission(submission) {
+    this.setSubmission(submission);
+  }
 
-  }, {
-    key: "onSubmissionError",
-    value: function onSubmissionError(error) {
-      if (!error) {
-        return;
-      }
-
-      // Normalize the error.
-      if (typeof error === 'string') {
-        error = { message: error };
-      }
-
-      this.showErrors(error);
-    }
-
-    /**
-     * Called when the submission has changed in value.
-     *
-     * @param {Object} changed - The changed value that triggered this event.
-     * @param {Object} changed.component - The component that was changed.
-     * @param {*} changed.value - The new value of the changed component.
-     * @param {boolean} changed.validate - If the change needs to be validated.
-     */
-
-  }, {
-    key: "onSubmissionChange",
-    value: function onSubmissionChange(changed) {
-      var value = (0, _clone3.default)(this.submission);
-      value.changed = changed;
-      this.checkData(value.data, !changed.validate);
-      this.emit('change', value);
-    }
-
-    /**
-     * Resets the submission of a form and restores defaults.
-     *
-     * @example
-     * let form = new FormioForm(document.getElementById('formio'));
-     * form.src = 'https://examples.form.io/example';
-     * form.submission = {data: {
-     *   firstName: 'Joe',
-     *   lastName: 'Smith',
-     *   email: 'joe@example.com'
-     * }};
-     *
-     * // In two seconds, reset the data in the form.
-     * setTimeout(() => form.reset(), 2000);
-     */
-
-  }, {
-    key: "reset",
-    value: function reset() {
-      // Reset the submission data.
-      this.setSubmission({ data: {} });
-    }
-
-    /**
-     * Cancels the submission.
-     *
-     * @alias reset
-     */
-
-  }, {
-    key: "cancel",
-    value: function cancel() {
-      this.reset();
-    }
-  }, {
-    key: "executeSubmit",
-    value: function executeSubmit() {
-      var _this8 = this;
-
-      // DMS
-      var comp = null;
-      this.everyComponent(function (component) {
-        if ((component.component.type === 'checkbox' || component.component.type === 'jornaya') && component.component.validate.required && !component.getValue()) {
-          comp = component.component.key;
-        }
-      });
-
-      if (comp) {
-        delete this.submission.data[comp];
-      }
-
-      var submission = this.submission;
-      if (submission && submission.data && this.checkValidity(submission.data, true)) {
-        this.loading = true;
-        if (!this.formio) {
-          return this.onSubmit(submission, false);
-        }
-        return this.formio.saveSubmission(submission).then(function (result) {
-          return _this8.onSubmit(result, true);
-        }, function (err) {
-          return _this8.onSubmissionError(err);
-        }).catch(function (err) {
-          return _this8.onSubmissionError(err);
-        });
-      } else {
-        this.showErrors();
-        return _nativePromiseOnly2.default.reject('Invalid Submission');
-      }
-    }
-
-    /**
-     * Submits the form.
-     *
-     * @example
-     * let form = new FormioForm(document.getElementById('formio'));
-     * form.src = 'https://examples.form.io/example';
-     * form.submission = {data: {
-     *   firstName: 'Joe',
-     *   lastName: 'Smith',
-     *   email: 'joe@example.com'
-     * }};
-     * form.submit().then((submission) => {
-     *   console.log(submission);
-     * });
-     *
-     * @param {boolean} before - If this submission occured from the before handlers.
-     *
-     * @returns {Promise} - A promise when the form is done submitting.
-     */
-
-  }, {
-    key: "submit",
-    value: function submit(before) {
-      var _this9 = this;
-
-      if (!before) {
-        return this.beforeSubmit().then(function () {
-          return _this9.executeSubmit();
-        });
-      } else {
-        return this.executeSubmit();
-      }
-    }
-  }, {
-    key: "src",
-    get: function get() {
-      return this._src;
-    }
-
-    /**
-     * Set the Form source, which is typically the Form.io embed URL.
-     *
-     * @param {string} value - The value of the form embed url.
-     *
-     * @example
-     * let form = new FormioForm(document.getElementById('formio'));
-     * form.formReady.then(() => {
-     *   console.log('The form is formReady!');
-     * });
-     * form.src = 'https://examples.form.io/example';
-     */
-    ,
-    set: function set(value) {
-      var _this10 = this;
-
-      if (!value || typeof value !== 'string') {
-        return;
-      }
-      this._src = value;
-      this.formio = new _formio2.default(value);
-
-      if (this.type === 'form') {
-        // Set the options source so this can be passed to other components.
-        this.options.src = value;
-        this.options.formio = this.formio;
-      }
-
-      this.formio.loadForm().then(function (form) {
-        return _this10.setForm(form);
-      }, function (err) {
-        return _this10.formReadyReject(err);
-      }).catch(function (err) {
-        return _this10.formReadyReject(err);
-      });
-      if (this.formio.submissionId) {
-        this.onSubmission = this.formio.loadSubmission().then(function (submission) {
-          return _this10.setSubmission(submission);
-        }, function (err) {
-          return _this10.submissionReadyReject(err);
-        }).catch(function (err) {
-          return _this10.submissionReadyReject(err);
+  /**
+   * Sets a submission and returns the promise when it is ready.
+   * @param submission
+   * @return {Promise.<TResult>}
+   */
+  setSubmission(submission) {
+    return this.onSubmission = this.formReady.then(() => {
+      // If nothing changed, still trigger an update.
+      if (!this.setValue(submission, flags)) {
+        this.triggerChange({
+          noValidate: true
         });
       }
+    }, err => this.submissionReadyReject(err)).catch(err => this.submissionReadyReject(err));
+  }
+
+  setValue(submission, noUpdate, noValidate) {
+    this._submission = submission || { data: {} };
+    return super.setValue(this._submission.data, noUpdate, noValidate);
+  }
+
+  getValue() {
+    if (!this._submission.data) {
+      this._submission.data = {};
     }
+    const submission = this._submission;
+    submission.data = this.data;
+    return this._submission;
+  }
 
+  /**
+   * Create a new form.
+   *
+   * @param {Object} form - The form object that is created.
+   * @returns {Promise.<TResult>}
+   */
+  /**
+   * Create a new form.
+   *
+   * @param {Object} form - The form object that is created.
+   * @returns {Promise.<TResult>}
+   */
+  createForm(form) {
     /**
-     * Called when both the form and submission have been loaded.
-     *
-     * @returns {Promise} - The promise to trigger when both form and submission have loaded.
+     * {@link BaseComponent.component}
      */
+    if (this.component) {
+      this.component.components = form.components;
+    } else {
+      this.component = form;
+    }
+    return this.onFormBuild = this.render().then(() => {
+      this.formReadyResolve();
+      this.onFormBuild = null;
+      this.setValue(this.submission);
+      return form;
+    }).catch(err => {
+      console.warn(err);
+      this.formReadyReject(err);
+    });
+  }
 
-  }, {
-    key: "ready",
-    get: function get() {
-      var _this11 = this;
-
-      return this.formReady.then(function () {
-        return _this11.submissionReady;
+  /**
+   * Render the form within the HTML element.
+   * @returns {Promise.<TResult>}
+   */
+  render() {
+    return this.onElement.then(() => {
+      this.clear();
+      return this.localize().then(() => {
+        this.build();
+        this.on('resetForm', () => this.reset(), true);
+        this.on('componentChange', changed => this.triggerSubmissionChange(changed), true);
+        this.on('refreshData', () => this.updateValue());
+        this.emit('render');
       });
-    }
+    });
+  }
 
-    /**
-     * Returns if this form is loading.
-     *
-     * @returns {boolean} - TRUE means the form is loading, FALSE otherwise.
-     */
-
-  }, {
-    key: "loading",
-    get: function get() {
-      return this._loading;
-    }
-
-    /**
-     * Set the loading state for this form, and also show the loader spinner.
-     *
-     * @param {boolean} loading - If this form should be "loading" or not.
-     */
-    ,
-    set: function set(loading) {
-      if (this._loading !== loading) {
-        this._loading = loading;
-        if (!this.loader && loading) {
-          this.loader = this.ce('loaderWrapper', 'div', {
-            class: 'loader-wrapper'
-          });
-          var spinner = this.ce('loader', 'div', {
-            class: 'loader text-center'
-          });
-          this.loader.appendChild(spinner);
-        }
-        if (this.loader) {
-          try {
-            if (loading) {
-              this.prepend(this.loader);
-            } else {
-              this.removeChild(this.loader);
-            }
-          } catch (err) {}
-        }
+  /**
+   * Sets a new alert to display in the error dialog of the form.
+   *
+   * @param {string} type - The type of alert to display. "danger", "success", "warning", etc.
+   * @param {string} message - The message to show in the alert.
+   */
+  setAlert(type, message) {
+    if (this.options.noAlerts) {
+      if (!message) {
+        this.emit('error', false);
       }
+      return;
     }
-  }, {
-    key: "form",
-    get: function get() {
-      return this._form;
+    if (this.alert) {
+      try {
+        this.removeChild(this.alert);
+        this.alert = null;
+      } catch (err) {}
+    }
+    if (message) {
+      this.alert = this.ce('alert-' + type, 'div', {
+        class: 'alert alert-' + type,
+        role: 'alert'
+      });
+      this.alert.innerHTML = message;
+    }
+    if (!this.alert) {
+      return;
+    }
+    this.prepend(this.alert);
+  }
+
+  /**
+   * Build the form.
+   */
+  build() {
+    this.on('submitButton', () => this.submit(), true);
+    this.addComponents();
+    this.checkConditions(this.getValue());
+  }
+
+  /**
+   * Show the errors of this form within the alert dialog.
+   *
+   * @param {Object} error - An optional additional error to display along with the component errors.
+   * @returns {*}
+   */
+  showErrors(error) {
+    this.loading = false;
+    let errors = this.errors;
+    if (error) {
+      errors.push(error);
+    }
+    if (!errors.length) {
+      this.setAlert(false);
+      return;
+    }
+    let message = '<p>' + this.t('error') + '</p><ul>';
+    _each(errors, err => {
+      if (err) {
+        let errorMessage = err.message || err;
+        message += '<li><strong>' + errorMessage + '</strong></li>';
+      }
+    });
+    message += '</ul>';
+    this.setAlert('danger', message);
+    this.emit('error', errors);
+    return errors;
+  }
+
+  /**
+   * Called when the submission has completed, or if the submission needs to be sent to an external library.
+   *
+   * @param {Object} submission - The submission object.
+   * @param {boolean} saved - Whether or not this submission was saved to the server.
+   * @returns {object} - The submission object.
+   */
+  onSubmit(submission, saved) {
+    this.loading = false;
+    this.setValue(submission);
+    this.setAlert('success', '<p>' + this.t('complete') + '</p>');
+    this.emit('submit', submission);
+    if (saved) {
+      this.emit('submitDone', submission);
+    }
+    return submission;
+  }
+
+  /**
+   * Called when an error occurs during the submission.
+   *
+   * @param {Object} error - The error that occured.
+   */
+  onSubmissionError(error) {
+    if (!error) {
+      return;
     }
 
-    /**
-     * Sets the form value.
-     *
-     * @alias setForm
-     * @param {Object} form - The form schema object.
-     */
-    ,
-    set: function set(form) {
-      this.setForm(form);
+    // Normalize the error.
+    if (typeof error === 'string') {
+      error = { message: error };
     }
 
-    /**
-     * Returns the submission object that was set within this form.
-     *
-     * @returns {Object}
-     */
+    this.showErrors(error);
+  }
 
-  }, {
-    key: "submission",
-    get: function get() {
-      return this.getValue();
+  /**
+   * Called when the submission has changed in value.
+   *
+   * @param {Object} changed - The changed value that triggered this event.
+   * @param {Object} changed.component - The component that was changed.
+   * @param {*} changed.value - The new value of the changed component.
+   * @param {boolean} changed.validate - If the change needs to be validated.
+   */
+  onSubmissionChange(changed) {
+    let value = _clone(this.submission);
+    value.changed = changed;
+    this.checkData(value.data, !changed.validate);
+    this.emit('change', value);
+  }
+
+  /**
+   * Resets the submission of a form and restores defaults.
+   *
+   * @example
+   * let form = new FormioForm(document.getElementById('formio'));
+   * form.src = 'https://examples.form.io/example';
+   * form.submission = {data: {
+   *   firstName: 'Joe',
+   *   lastName: 'Smith',
+   *   email: 'joe@example.com'
+   * }};
+   *
+   * // In two seconds, reset the data in the form.
+   * setTimeout(() => form.reset(), 2000);
+   */
+  reset() {
+    // Reset the submission data.
+    this.setSubmission({ data: {} });
+  }
+
+  /**
+   * Cancels the submission.
+   *
+   * @alias reset
+   */
+  cancel() {
+    this.reset();
+  }
+
+  executeSubmit() {
+    const submission = this.submission || {};
+    if (submission && submission.data && this.checkValidity(submission.data, true)) {
+      this.loading = true;
+      if (!this.formio) {
+        return this.onSubmit(submission, false);
+      }
+      return this.formio.saveSubmission(submission).then(result => this.onSubmit(result, true), err => this.onSubmissionError(err)).catch(err => this.onSubmissionError(err));
+    } else {
+      this.showErrors();
+      return Promise.reject('Invalid Submission');
     }
+  }
 
-    /**
-     * Sets the submission of a form.
-     *
-     * @example
-     * let form = new FormioForm(document.getElementById('formio'));
-     * form.src = 'https://examples.form.io/example';
-     * form.submission = {data: {
-     *   firstName: 'Joe',
-     *   lastName: 'Smith',
-     *   email: 'joe@example.com'
-     * }};
-     *
-     * @param {Object} submission - The Form.io submission object.
-     */
-    ,
-    set: function set(submission) {
-      this.setSubmission(submission);
+  /**
+   * Submits the form.
+   *
+   * @example
+   * let form = new FormioForm(document.getElementById('formio'));
+   * form.src = 'https://examples.form.io/example';
+   * form.submission = {data: {
+   *   firstName: 'Joe',
+   *   lastName: 'Smith',
+   *   email: 'joe@example.com'
+   * }};
+   * form.submit().then((submission) => {
+   *   console.log(submission);
+   * });
+   *
+   * @param {boolean} before - If this submission occured from the before handlers.
+   *
+   * @returns {Promise} - A promise when the form is done submitting.
+   */
+  submit(before) {
+    if (!before) {
+      return this.beforeSubmit().then(() => this.executeSubmit());
+    } else {
+      return this.executeSubmit();
     }
-  }]);
+  }
+}
 
-  return FormioForm;
-}(_Components.FormioComponents);
-
-FormioForm.setBaseUrl = _formio2.default.setBaseUrl;
-FormioForm.setApiUrl = _formio2.default.setApiUrl;
-FormioForm.setAppUrl = _formio2.default.setAppUrl;
+FormioForm.setBaseUrl = Formio.setBaseUrl;
+FormioForm.setApiUrl = Formio.setApiUrl;
+FormioForm.setAppUrl = Formio.setAppUrl;
 
 /**
  * Embed this form within the current page.
@@ -862,13 +657,13 @@ FormioForm.embed = function (embed) {
   if (!embed || !embed.src) {
     return null;
   }
-  var id = embed.id || 'formio-' + Math.random().toString(36).substring(7);
-  var className = embed.class || 'formio-form-wrapper';
-  var code = embed.styles ? '<link rel="stylesheet" href="' + embed.styles + '">' : '';
+  let id = embed.id || 'formio-' + Math.random().toString(36).substring(7);
+  let className = embed.class || 'formio-form-wrapper';
+  let code = embed.styles ? '<link rel="stylesheet" href="' + embed.styles + '">' : '';
   code += '<div id="' + id + '" class="' + className + '"></div>';
   document.write(code);
-  var formElement = document.getElementById(id);
-  var form = new FormioForm(formElement);
+  let formElement = document.getElementById(id);
+  let form = new FormioForm(formElement);
   form.src = embed.src;
   return form;
 };

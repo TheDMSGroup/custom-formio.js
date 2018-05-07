@@ -1,3 +1,5 @@
+import _ from 'lodash';
+
 import { BaseComponent } from '../base/Base';
 export class CheckBoxComponent extends BaseComponent {
   elementInfo() {
@@ -39,6 +41,52 @@ export class CheckBoxComponent extends BaseComponent {
     });
   }
 
+  labelOnTheTopOrLeft() {
+    return ['top', 'left'].includes(this.component.labelPosition);
+  }
+
+  labelOnTheTopOrBottom() {
+    return ['top', 'bottom'].includes(this.component.labelPosition);
+  }
+
+  setInputLabelStyle(label) {
+    if (this.component.labelPosition === 'left') {
+      _.assign(label.style, {
+        textAlign: 'center',
+        paddingLeft: 0,
+      });
+    }
+
+    if (this.labelOnTheTopOrBottom()) {
+      _.assign(label.style, {
+        display: 'block',
+        textAlign: 'center',
+        paddingLeft: 0,
+      });
+    }
+  }
+
+  setInputStyle(input) {
+    if (this.component.labelPosition === 'left') {
+      _.assign(input.style, {
+        position: 'initial',
+        marginLeft: '7px'
+      });
+    }
+
+    if (this.labelOnTheTopOrBottom()) {
+      _.assign(input.style, {
+        width: '100%',
+        position: 'initial',
+        marginLeft: 0
+      });
+    }
+  }
+
+  isEmpty(value) {
+    return super.isEmpty(value) || value === false;
+  }
+
   createLabel(container, input) {
     if (!this.component.label) {
       return null;
@@ -76,17 +124,28 @@ export class CheckBoxComponent extends BaseComponent {
     return input;
   }
 
+  updateValueByName() {
+    const component = this.getRoot().getComponent(this.component.name);
+
+    if (component) {
+      component.setValue(this.component.value, {changed: true});
+    }
+    else {
+      this.data[this.component.name] = this.component.value;
+    }
+  }
+
   addInputEventListener(input) {
     this.addEventListener(input, this.info.changeEvent, () => {
       // If this input has a "name", then its other input elements are elsewhere on
       // the form. To get the correct submission object, we need to refresh the whole
       // data object.
       if (this.component.name) {
+        this.updateValueByName();
         this.emit('refreshData');
       }
-      else {
-        this.updateValue();
-      }
+
+      this.updateValue();
     });
   }
 
@@ -118,5 +177,17 @@ export class CheckBoxComponent extends BaseComponent {
     if (!noUpdate) {
       this.updateValue(noValidate);
     }
+  }
+
+  getRawValue() {
+    if (this.component.name) {
+      return this.data[this.component.name];
+    }
+
+    return super.getRawValue();
+  }
+
+  getView(value) {
+    return value ? 'Yes' : 'No';
   }
 }

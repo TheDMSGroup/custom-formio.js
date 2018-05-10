@@ -470,15 +470,13 @@ export default class FormioForm extends FormioComponents {
   render() {
     return this.onElement.then(() => {
       this.clear();
-      this.build();
-      this.isBuilt = true;
-      this.on('resetForm', () => this.reset(), true);
-      this.on('componentChange', (changed) => this.triggerSubmissionChange(changed), true);
-      this.on('refreshData', () => this.updateValue());
-      setTimeout(() => {
-        this.onChange();
+      return this.localize().then(() => {
+        this.build();
+        this.on('resetForm', () => this.reset(), true);
+        this.on('componentChange', (changed) => this.triggerSubmissionChange(changed), true);
+        this.on('refreshData', () => this.updateValue());
         this.emit('render');
-      }, 1);
+      });
     });
   }
 

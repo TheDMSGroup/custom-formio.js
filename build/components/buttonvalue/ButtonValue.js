@@ -1,6 +1,5 @@
-import { BaseComponent } from '../base/Base';
-import _each from 'lodash/each';
-export class ButtonValueComponent extends BaseComponent {
+import { ButtonComponent } from '../button/Button';
+export class ButtonValueComponent extends ButtonComponent {
   elementInfo() {
     let info = super.elementInfo();
     info.type = 'button';
@@ -15,27 +14,6 @@ export class ButtonValueComponent extends BaseComponent {
       info.attr.class += ' ' + this.component.customClass;
     }
     return info;
-  }
-
-  set loading(loading) {
-    this._loading = loading;
-    if (!this.loader && loading) {
-      this.loader = this.ce('buttonLoader', 'i', {
-        class: 'glyphicon glyphicon-refresh glyphicon-spin button-icon-right'
-      });
-    }
-    if (this.loader) {
-      if (loading) {
-        this.element.appendChild(this.loader);
-      } else {
-        this.element.removeChild(this.loader);
-      }
-    }
-  }
-
-  set disabled(disabled) {
-    super.disabled = disabled;
-    this.element.disable = disabled;
   }
 
   build() {

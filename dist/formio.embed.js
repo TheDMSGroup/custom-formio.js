@@ -3248,17 +3248,9 @@ exports.ButtonValueComponent = undefined;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _set = function set(object, property, value, receiver) { var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent !== null) { set(parent, property, value, receiver); } } else if ("value" in desc && desc.writable) { desc.value = value; } else { var setter = desc.set; if (setter !== undefined) { setter.call(receiver, value); } } return value; };
-
 var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 
-var _Base = require('../base/Base');
-
-var _each2 = require('lodash/each');
-
-var _each3 = _interopRequireDefault(_each2);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _Button = require('../button/Button');
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -3266,8 +3258,8 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var ButtonValueComponent = exports.ButtonValueComponent = function (_BaseComponent) {
-  _inherits(ButtonValueComponent, _BaseComponent);
+var ButtonValueComponent = exports.ButtonValueComponent = function (_ButtonComponent) {
+  _inherits(ButtonValueComponent, _ButtonComponent);
 
   function ButtonValueComponent() {
     _classCallCheck(this, ButtonValueComponent);
@@ -3345,35 +3337,12 @@ var ButtonValueComponent = exports.ButtonValueComponent = function (_BaseCompone
         this.disabled = true;
       }
     }
-  }, {
-    key: 'loading',
-    set: function set(loading) {
-      this._loading = loading;
-      if (!this.loader && loading) {
-        this.loader = this.ce('buttonLoader', 'i', {
-          class: 'glyphicon glyphicon-refresh glyphicon-spin button-icon-right'
-        });
-      }
-      if (this.loader) {
-        if (loading) {
-          this.element.appendChild(this.loader);
-        } else {
-          this.element.removeChild(this.loader);
-        }
-      }
-    }
-  }, {
-    key: 'disabled',
-    set: function set(disabled) {
-      _set(ButtonValueComponent.prototype.__proto__ || Object.getPrototypeOf(ButtonValueComponent.prototype), 'disabled', disabled, this);
-      this.element.disable = disabled;
-    }
   }]);
 
   return ButtonValueComponent;
-}(_Base.BaseComponent);
+}(_Button.ButtonComponent);
 
-},{"../base/Base":4,"lodash/each":222}],7:[function(require,module,exports){
+},{"../button/Button":5}],7:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -3646,7 +3615,12 @@ var ColumnComponent = exports.ColumnComponent = function (_FormioComponents) {
   _createClass(ColumnComponent, [{
     key: 'className',
     get: function get() {
-      return 'col col-sm-' + this.component.colWidth;
+      var comp = this.component;
+      var width = ' col-sm-' + (comp.width ? comp.width : 6);
+      var offset = ' col-sm-offset-' + (comp.offset ? comp.offset : 0);
+      var push = ' col-sm-push-' + (comp.push ? comp.push : 0);
+      var pull = ' col-sm-pull-' + (comp.pull ? comp.pull : 0);
+      return 'col' + width + offset + push + pull;
     }
   }]);
 
@@ -3691,10 +3665,8 @@ var ColumnsComponent = exports.ColumnsComponent = function (_FormioComponents) {
     value: function addComponents() {
       var _this2 = this;
 
-      var colWidth = Math.floor(12 / this.component.columns.length);
       (0, _each3.default)(this.component.columns, function (column) {
         column.type = 'column';
-        column.colWidth = colWidth;
         _this2.addComponent(column, _this2.element, _this2.data);
       });
     }
